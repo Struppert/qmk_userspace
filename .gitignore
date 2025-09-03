@@ -1,0 +1,28 @@
+# QMK build artifacts
+*.hex
+*.bin
+*.elf
+*.map
+
+# QMK build dirs
+.build/
+.build-*/
+obj_*/
+
+# Editor/IDE junk
+*.swp
+*.swo
+*.swn
+*.tmp
+*~
+.vscode/
+.idea/
+
+# OS/Filesystem junk
+.DS_Store
+Thumbs.db
+
+# Python cache (falls du Skripte einsetzt)
+__pycache__/
+*.pyc
+*.pyo
