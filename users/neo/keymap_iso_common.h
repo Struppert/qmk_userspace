@@ -190,40 +190,42 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /* Tap/Hold Tuning */
 bool get_tapping_force_hold(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
-  case L3_ESC:
-  case SYS_ESC:
-    return true;
+  // Keine force-hold-Keys, wenn Tap-first gewünscht ist:
   default:
     return false;
   }
 }
+
 bool get_ignore_mod_tap_interrupt(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
   case L3_ESC:
   case SYS_ESC:
   case SP_FN:
-    return true;
+    return true; // Tap-first
   default:
     return false;
   }
 }
+
 bool get_hold_on_other_key_press(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
-  case L3_ESC:
-  case SYS_ESC:
-  case SP_FN:
-    return true;
+  // Keine hold-on-interrupt-Keys bei Tap-first:
   default:
     return false;
   }
 }
+
+bool get_retro_tapping(uint16_t keycode, keyrecord_t *record) {
+  return keycode == SP_FN; // nur Space bekommt Retro-Tapping
+}
+
 uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
   switch (keycode) {
   case L3_ESC:
   case SYS_ESC:
-    return 230;
+    return TAPPING_TERM + 30;
   case SP_FN:
-    return 200;
+    return TAPPING_TERM - 100;
   default:
     return TAPPING_TERM;
   }
