@@ -152,7 +152,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* ───────── Layer 5: FN (Makros/F-Tasten + EE_CLR rechts unten) ───────── */
     [_FN] = LAYOUT_ISO(
         /* Row1 */ KC_ESC, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DEL,
-        /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, _______, _______, _______, _______,
+        /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, _______, _______, _______, _______, _______, _______, _______, _______,
         /* Row3 */ L3_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, _______, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, _______, _______, L3_MO, KC_ENT,
         /* Row4 */ KC_LSFT, L4_MO, SYS_MO, _______, _______, _______, MO(_RGB), MO(_SYS), _______, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
         /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_5, KC_RCTL),
@@ -161,7 +161,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_SYS] = LAYOUT_ISO(
     /* Row1 */ KC_ESC, QK_BOOT, EE_CLR, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_BSPC,
     /* Row2 */ KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NEOQWERTZ2), DF(_NEO3), DF(_NEO4), KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    /* Row3 */ L3_ESC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
+    /* Row3 */ L3_ESC, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
     /* Row4 */ KC_LSFT, L4_MO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_6, KC_RCTL
   ),
