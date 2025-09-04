@@ -101,7 +101,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
                DE_GRV,           // `  (Shift+´)        — wie Standard-DE
                KC_BSPC,
         /* Row2 */ KC_TRNS, S(KC_Q), S(KC_W), S(KC_E) /*€*/, S(KC_R), S(KC_T), S(DE_Z), S(KC_U), S(KC_I), S(KC_O), S(KC_P), S(DE_UDIA), DE_ASTR,
-        /* Row3 */ L3_ESC, S(KC_A), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(DE_UDIA), S(DE_ADIA), L3_MO, KC_TRNS,
+        /* Row3 */ L3_ESC, S(KC_A), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(DE_UDIA), S(DE_ADIA), L3_MO, S(KC_ENT),
         /* Row4 */ KC_TRNS, L4_MO, S(DE_Y), S(KC_X), S(KC_C), S(KC_V), S(KC_B), S(KC_N), S(KC_M), DE_SCLN, DE_COLN, DE_UNDS, KC_TRNS,
         /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_2, KC_RCTL),
 
