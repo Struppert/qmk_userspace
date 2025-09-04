@@ -15,5 +15,7 @@ COMMAND_ENABLE  = no
 COMBO_ENABLE     = no
 TAP_DANCE_ENABLE = no
 
+DYNAMIC_MACRO_ENABLE = yes
+
 # Keine RGB-Flags hier! (Board-spezifisch setzen)
 # Keine MCU-/Board-spezifischen Flags hier!

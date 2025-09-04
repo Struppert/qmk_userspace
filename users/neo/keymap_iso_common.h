@@ -124,15 +124,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_DEL,
 
         /* Row2 (Q W E R T  Z  U  I  O  P  Ü   +) – Programmierzeichen */
-        KC_NO, DE_AT, DE_UNDS, DE_LBRC, DE_RBRC, DE_CIRC,
-        /* Z */ DE_EXLM, DE_LABK, DE_RABK, DE_EQL, DE_AMPR, DE_DLR, DE_TILD,
-
+        KC_NO, DE_AT, DE_UNDS, DE_LBRC, DE_RBRC, DE_CIRC, DE_EXLM, DE_LABK, DE_RABK, DE_EQL, DE_AMPR, DE_DLR, DE_TILD,
         /* Row3 (Caps A S D F G  H  J  K  L  Ö   Ä   #) */
         L3_ESC, DE_BSLS, DE_SLSH, DE_LCBR, DE_RCBR, DE_ASTR, DE_QUES, DE_LPRN, DE_RPRN, DE_MINS, DE_COLN, DE_AT, L3_MO, KC_ENT,
-
         /* Row4 (<>  Y  X  C  V  B   N   M   ,    .     -) */
         KC_LSFT, L4_MO, DE_HASH, DE_DLR, DE_PIPE, DE_TILD, DE_GRV, DE_PLUS, DE_PERC, DE_DQUO, DE_QUOT, DE_SCLN, KC_RSFT,
-
         /* Row5 (Mods/Space-FN bleiben nutzbar, nichts transparent) */
         KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, KC_3, KC_RCTL),
 
@@ -152,9 +148,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* ───────── Layer 5: FN (Makros/F-Tasten + EE_CLR rechts unten) ───────── */
     [_FN] = LAYOUT_ISO(
         /* Row1 */ KC_ESC, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DEL,
-        /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, _______, _______, _______, _______, _______, _______, _______, _______,
-        /* Row3 */ L3_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, _______, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, _______, _______, L3_MO, KC_ENT,
-        /* Row4 */ KC_LSFT, L4_MO, SYS_MO, _______, _______, _______, MO(_RGB), MO(_SYS), _______, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
+        /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, DM_PLY1, KC_NO, DM_REC1, DM_REC2, DM_RSTP, KC_NO, KC_NO, KC_NO,
+        /* Row3 */ L3_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, DM_PLY2, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_NO, KC_NO, L3_MO, KC_ENT,
+        /* Row4 */ KC_LSFT, L4_MO, SYS_MO, KC_NO, KC_NO, KC_NO, MO(_RGB), MO(_SYS), KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
         /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_5, KC_RCTL),
 
     // ───────── Layer 6: SYS (Service/Bootloader) ─────────
