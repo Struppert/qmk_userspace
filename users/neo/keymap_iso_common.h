@@ -28,6 +28,7 @@ enum layers {
   _NEO4,
   _FN,
   _SYS,
+  _RGB,
 };
 
 // ── Eigene Keycodes (Unicode-Mode-Steuerung) ─────────────────────────────────
@@ -153,16 +154,40 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         /* Row1 */ KC_ESC, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DEL,
         /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, _______, _______, _______, _______,
         /* Row3 */ L3_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, _______, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, _______, _______, L3_MO, KC_ENT,
-        /* Row4 */ KC_LSFT, L4_MO, SYS_MO, EE_CLR, _______, _______, _______, _______, _______, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
+        /* Row4 */ KC_LSFT, L4_MO, SYS_MO, _______, _______, _______, MO(_RGB), MO(_SYS), _______, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
         /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_5, KC_RCTL),
 
     // ───────── Layer 6: SYS (Service/Bootloader) ─────────
-    [_SYS] = LAYOUT_ISO(
-        /* Row1 */ KC_ESC, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NEOQWERTZ2), DF(_NEO3), DF(_NEO4), QK_BOOT, EE_CLR, QK_RGB_MATRIX_TOGGLE, QK_RGB_MATRIX_MODE_NEXT, QK_RGB_MATRIX_MODE_PREVIOUS, QK_RGB_MATRIX_VALUE_UP, QK_RGB_MATRIX_VALUE_DOWN, KC_BSPC,
-        /* Row2 */ KC_TAB, QK_RGB_MATRIX_HUE_UP, QK_RGB_MATRIX_HUE_DOWN, QK_RGB_MATRIX_SATURATION_UP, QK_RGB_MATRIX_SATURATION_DOWN, QK_RGB_MATRIX_SPEED_UP, QK_RGB_MATRIX_SPEED_DOWN, _______, _______, _______, _______, _______, _______,
-        /* Row3 */ L3_ESC, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, L3_MO, KC_ENT,
-        /* Row4 */ KC_LSFT, L4_MO, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, KC_RSFT,
-        /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_6, KC_RCTL),
+  [_SYS] = LAYOUT_ISO(
+    /* Row1 */ KC_ESC, QK_BOOT, EE_CLR, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_BSPC,
+    /* Row2 */ KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NEOQWERTZ2), DF(_NEO3), DF(_NEO4), KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
+    /* Row3 */ L3_ESC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
+    /* Row4 */ KC_LSFT, L4_MO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
+    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_6, KC_RCTL
+  ),
+
+  // ───────── Layer 7: RGB (alle RGB-Matrix Controls) ─────────
+  [_RGB] = LAYOUT_ISO(
+    /* Row1 */ KC_ESC,
+               QK_RGB_MATRIX_TOGGLE,
+               QK_RGB_MATRIX_MODE_NEXT,
+               QK_RGB_MATRIX_MODE_PREVIOUS,
+               QK_RGB_MATRIX_VALUE_UP,
+               QK_RGB_MATRIX_VALUE_DOWN,
+               QK_RGB_MATRIX_SPEED_UP,
+               QK_RGB_MATRIX_SPEED_DOWN,
+               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_BSPC,
+
+    /* Row2 */ KC_TAB,
+               QK_RGB_MATRIX_HUE_UP,
+               QK_RGB_MATRIX_HUE_DOWN,
+               QK_RGB_MATRIX_SATURATION_UP,
+               QK_RGB_MATRIX_SATURATION_DOWN,
+               KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
+    /* Row3 */ L3_ESC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
+    /* Row4 */ KC_LSFT, L4_MO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
+    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO, KC_RGUI, KC_7, KC_RCTL
+  ),
 }; // end keymaps
 // clang-format on
 
@@ -262,25 +287,28 @@ layer_state_t layer_state_set_user(layer_state_t state) {
   switch (get_highest_layer(state)) {
   case _QWERTZ:
     rgb_matrix_set_color_all(0, 0, 0);
-    break;
+    break; // aus
   case _NEOQWERTZ1:
     rgb_matrix_set_color_all(0, 20, 0);
-    break;
+    break; // grün
   case _NEOQWERTZ2:
     rgb_matrix_set_color_all(20, 20, 0);
-    break;
+    break; // gelb
   case _NEO3:
     rgb_matrix_set_color_all(20, 0, 20);
-    break;
+    break; // magenta
   case _NEO4:
     rgb_matrix_set_color_all(0, 0, 20);
-    break;
+    break; // blau
   case _FN:
     rgb_matrix_set_color_all(0, 20, 20);
-    break;
+    break; // cyan
   case _SYS:
     rgb_matrix_set_color_all(20, 0, 0);
-    break;
+    break; // rot
+  case _RGB:
+    rgb_matrix_set_color_all(20, 20, 20);
+    break; // weiß
   }
   return state;
 }

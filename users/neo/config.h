@@ -1,11 +1,11 @@
 // users/neo/config.h
 #pragma once
 
-// VIA: wir nutzen 7 Layer (0..6)
+// VIA: wir nutzen 8 Layer (0..7)
 #ifdef DYNAMIC_KEYMAP_LAYER_COUNT
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
 #endif
-#define DYNAMIC_KEYMAP_LAYER_COUNT 7
+#define DYNAMIC_KEYMAP_LAYER_COUNT 8
 
 // Unicode-Input-Modi für UC(...)
 #define UNICODE_SELECTED_MODES                                                 \
