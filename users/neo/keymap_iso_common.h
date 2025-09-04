@@ -21,9 +21,9 @@
 #endif
 
 enum layers {
-  _BASE = 0,
-  _NEO1,
-  _NEO2,
+  _QWERTZ = 0,
+  _NEOQWERTZ1,
+  _NEOQWERTZ2,
   _NEO3,
   _NEO4,
   _FN,
@@ -45,7 +45,7 @@ enum custom_keycodes {
 #define L4_MO MO(_NEO4)
 #define SP_FN LT(_FN, KC_SPC)
 #define SYS_MO MO(_SYS)
-#define NEO_SHIFT MO(_NEO2)
+#define NEO_SHIFT MO(_NEOQWERTZ2)
 
 #ifdef COMBO_ENABLE
 #include "process_combo.h"
@@ -67,7 +67,7 @@ void keyboard_post_init_user(void) {
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // ───────── Layer 0: BASE (QWERTZ, ISO) ─────────
-    [_BASE] = LAYOUT_ISO(
+    [_QWERTZ] = LAYOUT_ISO(
         /* Row1 */ QK_GESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_SS, DE_ACUT, KC_BSPC,
         /* Row2 */ KC_TAB, KC_Q, KC_W, KC_E, KC_R, KC_T, DE_Z, KC_U, KC_I, KC_O, KC_P, DE_UDIA, DE_PLUS,
         /* Row3 */ SYS_ESC, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, DE_ODIA, DE_ADIA, DE_HASH, KC_ENT,
@@ -75,7 +75,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, KC_0, KC_RCTL),
 
     // ───────── Layer 1: NeoQwertz Ebene 1 (klein) ─────────
-    [_NEO1] = LAYOUT_ISO(
+    [_NEOQWERTZ1] = LAYOUT_ISO(
         /* Row1 */ KC_ESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_SS, DE_EQL, KC_BSPC,
         /* Row2 */ KC_TAB, KC_Q, KC_W, KC_E, KC_R, KC_T, DE_Z, KC_U, KC_I, KC_O, KC_P, DE_UDIA, DE_PLUS,
         /* Row3 */ L3_ESC, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, DE_ODIA, DE_ADIA, L3_MO, KC_ENT,
@@ -84,7 +84,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // ───────── Layer 2: NeoQwertz Ebene 2 (groß + Typografie) ─────────
     // Buchstaben explizit "shifted"
-    [_NEO2] = LAYOUT_ISO(
+    [_NEOQWERTZ2] = LAYOUT_ISO(
     /* Row1 */ KC_TRNS,
                DE_DEG,           // °  (Shift+1)        — Neo: Degree auf 1
                DE_SECT,          // §  (Shift+2)
@@ -158,7 +158,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
     // ───────── Layer 6: SYS (Service/Bootloader) ─────────
     [_SYS] = LAYOUT_ISO(
-        /* Row1 */ KC_ESC, DF(_BASE), DF(_NEO1), DF(_NEO2), DF(_NEO3), DF(_NEO4), QK_BOOT, EE_CLR, QK_RGB_MATRIX_TOGGLE, QK_RGB_MATRIX_MODE_NEXT, QK_RGB_MATRIX_MODE_PREVIOUS, QK_RGB_MATRIX_VALUE_UP, QK_RGB_MATRIX_VALUE_DOWN, KC_BSPC,
+        /* Row1 */ KC_ESC, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NEOQWERTZ2), DF(_NEO3), DF(_NEO4), QK_BOOT, EE_CLR, QK_RGB_MATRIX_TOGGLE, QK_RGB_MATRIX_MODE_NEXT, QK_RGB_MATRIX_MODE_PREVIOUS, QK_RGB_MATRIX_VALUE_UP, QK_RGB_MATRIX_VALUE_DOWN, KC_BSPC,
         /* Row2 */ KC_TAB, QK_RGB_MATRIX_HUE_UP, QK_RGB_MATRIX_HUE_DOWN, QK_RGB_MATRIX_SATURATION_UP, QK_RGB_MATRIX_SATURATION_DOWN, QK_RGB_MATRIX_SPEED_UP, QK_RGB_MATRIX_SPEED_DOWN, _______, _______, _______, _______, _______, _______,
         /* Row3 */ L3_ESC, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, L3_MO, KC_ENT,
         /* Row4 */ KC_LSFT, L4_MO, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, KC_RSFT,
@@ -260,13 +260,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 layer_state_t layer_state_set_user(layer_state_t state) {
   switch (get_highest_layer(state)) {
-  case _BASE:
+  case _QWERTZ:
     rgb_matrix_set_color_all(0, 0, 0);
     break;
-  case _NEO1:
+  case _NEOQWERTZ1:
     rgb_matrix_set_color_all(0, 20, 0);
     break;
-  case _NEO2:
+  case _NEOQWERTZ2:
     rgb_matrix_set_color_all(20, 20, 0);
     break;
   case _NEO3:
