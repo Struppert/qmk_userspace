@@ -144,23 +144,22 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Row5 — 8 Keys */
     KC_LCTL, KC_LGUI, KC_LALT, KC_P0, KC_RALT, KC_RGUI, KC_4, KC_RCTL),
 
-
   // ─────────────────────────────────────────────────────────────────────────────
   // NOTED Ebene 1 (klein) — laut noted(noted_base)
   [_NOTED1] = LAYOUT_ISO(
-    /* R1(14) */ SYS_ESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_SS,  DE_ACUT, KC_BSPC,
-    /* R2(13) */ KC_TAB,  KC_Z, KC_Y, KC_U, KC_A, KC_Q, KC_P, KC_B, KC_M, KC_L, KC_F, KC_J,   DE_UDIA,
+    /* R1(14) */ SYS_ESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_MINS,  DE_ACUT, KC_BSPC,
+    /* R2(13) */ KC_TAB,  DE_Z, DE_Y, KC_U, KC_A, KC_Q, KC_P, KC_B, KC_M, KC_L, KC_F, KC_J, DE_SS,
     /* R3(14) */ L3_ESC_NOTED , KC_C, KC_S, KC_I, KC_E, KC_O, KC_D, KC_T, KC_N, KC_R, KC_H, L3_MO_NOTED, DE_ACUT, KC_ENT,
-    /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, KC_V, KC_X, DE_UDIA, DE_ADIA, DE_ODIA, KC_W, KC_G, DE_MINS, KC_DOT, KC_K, NOTED_SHIFT,
+    /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, KC_V, KC_X, DE_UDIA, DE_ADIA, DE_ODIA, KC_W, KC_G, DE_COMM, DE_DOT, KC_K, NOTED_SHIFT,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO_NOTED, KC_RGUI, KC_5, KC_RCTL),
 
   // ─────────────────────────────────────────────────────────────────────────────
   // NOTED Ebene 2 (Shift) — korrespondierend zu Ebene 1
   [_NOTED2] = LAYOUT_ISO(
     /* R1(14) */ SYS_ESC, KC_EXLM, KC_AT,  KC_HASH, KC_DLR, KC_PERC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, DE_UNDS, DE_ACUT, KC_BSPC,
-    /* R2(13) */ KC_TAB,  S(KC_Z),    S(KC_Y),   S(KC_U),    S(KC_A),    S(KC_Q),    S(KC_P), S(KC_B), S(KC_M), S(KC_L), S(KC_F), S(KC_J), S(DE_SS),
+    /* R2(13) */ KC_TAB,  S(DE_Z),    S(DE_Y),   S(KC_U),    S(KC_A),    S(KC_Q),    S(KC_P), S(KC_B), S(KC_M), S(KC_L), S(KC_F), S(KC_J), DE_SS,
     /* R3(14) */ L3_ESC_NOTED, S(KC_C),    S(KC_S),   S(KC_I),    S(KC_E),    S(KC_O),    S(KC_D), S(KC_T), S(KC_N), S(KC_R), S(KC_H), L3_MO_NOTED, DE_ACUT, KC_ENT,
-    /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, S(KC_V),   S(KC_X),   S(DE_UDIA), S(DE_ADIA), S(DE_ODIA), S(KC_W), S(KC_G), KC_SCLN, KC_COLN, S(KC_K), NOTED_SHIFT,
+    /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, S(KC_V),   S(KC_X),   S(DE_UDIA), S(DE_ADIA), S(DE_ODIA), S(KC_W), S(KC_G), DE_MINS, KC_DOT, S(KC_K), NOTED_SHIFT,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN,   L4_MO_NOTED,  KC_RGUI, KC_6, KC_RCTL),
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -186,7 +185,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Row1 */ KC_ESC, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DEL,
     /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, DM_PLY1, KC_NO, DM_REC1, DM_REC2, DM_RSTP, KC_NO, KC_NO, KC_NO,
     /* Row3 */ KC_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, DM_PLY2, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_NO, KC_NO, KC_NO, KC_ENT,
-    /* Row4 */ KC_LSFT, KC_NO, SYS_MO, KC_NO, KC_NO, KC_NO, MO(_RGB), MO(_SYS), KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
+    /* Row4 */ KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, MO(_RGB), MO(_SYS), KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_5, KC_RCTL),
 
   // ───────── Layer 6: SYS (Service/Bootloader) ─────────
