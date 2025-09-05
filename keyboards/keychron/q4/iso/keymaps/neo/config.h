@@ -2,14 +2,6 @@
 #pragma once
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VIA/Dynamic Keymap: wir nutzen 7 Layer (0..6). Ohne diese Vorgabe zeigt VIA
-// sonst nur die Standardanzahl an.
-#ifdef DYNAMIC_KEYMAP_LAYER_COUNT
-#undef DYNAMIC_KEYMAP_LAYER_COUNT
-#endif
-#define DYNAMIC_KEYMAP_LAYER_COUNT 8
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Unicode-Input-Modus für UC(...) Keycodes (z. B. UC(0x20AC) für "€").
 // Du arbeitest primär unter Linux → UC_LNX ist passend.
 // Falls du die gleiche Firmware unter Windows/macOS nutzt, ändere hier:
