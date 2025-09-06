@@ -12,10 +12,10 @@ CONSOLE_ENABLE  = no
 COMMAND_ENABLE  = no
 
 # Optionales
-COMBO_ENABLE     = no
-TAP_DANCE_ENABLE = no
+COMBO_ENABLE     = yes
+TAP_DANCE_ENABLE = yes
+LEADER_ENABLE    = yes
 
 DYNAMIC_MACRO_ENABLE = yes
 
-# Keine RGB-Flags hier! (Board-spezifisch setzen)
-# Keine MCU-/Board-spezifischen Flags hier!
+RGB_MATRIX_ENABLE = yes

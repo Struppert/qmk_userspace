@@ -4,6 +4,16 @@
 #include "process_unicode.h"
 #include "quantum.h"
 
+#ifdef TAP_DANCE_ENABLE
+#include "process_tap_dance.h"
+#endif
+
+/* ---------- Leader sauber einbinden ---------- */
+#if defined(LEADER_ENABLE) && defined(KEYMAP_IMPLEMENTATION)
+#include "process_leader.h"
+LEADER_EXTERNS();
+#endif
+
 #ifndef LAYOUT_ISO
 #error                                                                         \
     "Define LAYOUT_ISO before including keymap_iso_common.h (e.g., #define LAYOUT_ISO LAYOUT_iso_62)"
@@ -50,11 +60,210 @@ enum custom_keycodes {
 
 #ifdef COMBO_ENABLE
 #include "process_combo.h"
-const combo_t key_combos[] PROGMEM = {};
+combo_t key_combos[] PROGMEM = {};
 #endif
 
 #ifdef TAP_DANCE_ENABLE
-qk_tap_dance_action_t tap_dance_actions[] = {};
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Tap-Dance Bausteine:
+ *  - td_lt_lead:  Tap = Key, Hold = layer_on, Double-Tap = Leader
+ *  - td_mo_lead:  Tap = nichts (wie MO), Hold = layer_on, Double-Tap = Leader
+ * ────────────────────────────────────────────────────────────────────────── */
+
+typedef struct {
+  uint8_t layer;
+  uint16_t tap_kc;
+  bool on;
+} td_lt_lead_t;
+static void td_lt_finished(tap_dance_state_t *s, void *ud) {
+  td_lt_lead_t *c = (td_lt_lead_t *)ud;
+  if (!c)
+    return;
+  if (s->count == 2 && !s->pressed) {
+    tap_code16(QK_LEAD);
+  } else if (s->pressed) {
+    layer_on(c->layer);
+    c->on = true;
+  } else {
+    tap_code16(c->tap_kc);
+  }
+}
+static void td_lt_reset(tap_dance_state_t *s, void *ud) {
+  td_lt_lead_t *c = (td_lt_lead_t *)ud;
+  if (c && c->on) {
+    layer_off(c->layer);
+    c->on = false;
+  }
+}
+
+typedef struct {
+  uint8_t layer;
+  bool on;
+} td_mo_lead_t;
+static void td_mo_finished(tap_dance_state_t *s, void *ud) {
+  td_mo_lead_t *c = (td_mo_lead_t *)ud;
+  if (!c)
+    return;
+  if (s->count == 2 && !s->pressed) {
+    tap_code16(QK_LEAD);
+  } else if (s->pressed) {
+    layer_on(c->layer);
+    c->on = true;
+  } else { /* Tap: keine Ausgabe, wie MO() */
+  }
+}
+static void td_mo_reset(tap_dance_state_t *s, void *ud) {
+  td_mo_lead_t *c = (td_mo_lead_t *)ud;
+  if (c && c->on) {
+    layer_off(c->layer);
+    c->on = false;
+  }
+}
+
+// kleine Helfer:
+static inline void send_and_enter(const char *s) {
+  send_string(s);
+  tap_code(KC_ENT);
+}
+static inline void send_cc(const char *type) {
+  SEND_STRING("git commit -m \"");
+  SEND_STRING(type);
+  SEND_STRING(": ");
+  // Cursor ans Zeilenende bleibt im Commit-Textfeld
+}
+
+#if defined(LEADER_ENABLE)
+void leader_start_user(void) {
+  // optional: Feedback beim Start, z.B. RGB blitzen lassen
+  // (du nutzt unten ohnehin layer_state_set_user für Farben)
+}
+
+void leader_end_user(void) {
+  // ---- Deine Sequenzen (ehemals LEADER_DICTIONARY) ----
+
+  if (leader_sequence_two_keys(KC_A, KC_A)) {
+    send_and_enter("LEADER OK");
+  }
+
+  // git status / add / diff / staged-diff
+  if (leader_sequence_two_keys(KC_G, KC_S)) {
+    send_and_enter("git status");
+  } else if (leader_sequence_two_keys(KC_G, KC_A)) {
+    send_and_enter("git add -A");
+  } else if (leader_sequence_two_keys(KC_G, KC_D)) {
+    send_and_enter("git diff");
+  } else if (leader_sequence_three_keys(KC_G, KC_D, KC_S)) {
+    send_and_enter("git diff --staged");
+  }
+
+  // commit helpers
+  else if (leader_sequence_two_keys(KC_G, KC_C)) {
+    SEND_STRING("git commit -m \"\"");
+    tap_code(KC_LEFT);
+  } else if (leader_sequence_three_keys(KC_G, KC_C, KC_F)) {
+    send_cc("fix");
+  } else if (leader_sequence_three_keys(KC_G, KC_C, KC_B)) {
+    send_cc("feat");
+  } else if (leader_sequence_three_keys(KC_G, KC_C, KC_R)) {
+    send_cc("refactor");
+  } else if (leader_sequence_three_keys(KC_G, KC_C, KC_T)) {
+    send_cc("test");
+  } else if (leader_sequence_three_keys(KC_G, KC_C, KC_D)) {
+    send_cc("docs");
+  }
+
+  // push variants
+  else if (leader_sequence_two_keys(KC_G, KC_P)) {
+    send_and_enter("git push");
+  } else if (leader_sequence_three_keys(KC_G, KC_P, KC_1)) {
+    send_and_enter("git push --set-upstream origin HEAD");
+  } else if (leader_sequence_three_keys(KC_G, KC_P, KC_9)) {
+    send_and_enter("git push --tags");
+  } else if (leader_sequence_three_keys(KC_G, KC_P, KC_EXLM)) {
+    send_and_enter("git push --force-with-lease");
+  }
+
+  // logs
+  else if (leader_sequence_two_keys(KC_G, KC_L)) {
+    send_and_enter("git log --oneline --graph --decorate -n 30");
+  } else if (leader_sequence_three_keys(KC_G, KC_L, KC_A)) {
+    send_and_enter("git log --all --decorate --oneline --graph");
+  }
+
+  // branch helpers
+  else if (leader_sequence_three_keys(KC_G, KC_B, KC_N)) {
+    SEND_STRING("git switch -c ");
+  } else if (leader_sequence_three_keys(KC_G, KC_B, KC_S)) {
+    send_and_enter("git switch -");
+  } else if (leader_sequence_three_keys(KC_G, KC_B, KC_D)) {
+    send_and_enter("git branch -D ");
+  }
+
+  // rebase / tags
+  else if (leader_sequence_two_keys(KC_G, KC_R)) {
+    SEND_STRING("git rebase -i HEAD~");
+  } else if (leader_sequence_three_keys(KC_G, KC_T, KC_N)) {
+    SEND_STRING("git tag -a v");
+  } else if (leader_sequence_three_keys(KC_G, KC_T, KC_P)) {
+    send_and_enter("git push --tags");
+  }
+
+  // Kein Match → nichts tun (du kannst hier optional Feedback einbauen)
+}
+#endif /* LEADER_ENABLE */
+
+/* ── IDs
+   ─────────────────────────────────────────────────────────────────── */
+enum {
+  TD_CAPS_SYS_LEAD = 0, // Base Caps: LT(_SYS, ESC) + DT=Leader
+  TD_CAPS_NEO_LEAD,     // Neo Caps : LT(_NEO3, ESC) + DT=Leader
+  TD_CAPS_NOTED_LEAD,   // Noted Caps: LT(_NOTED3, ESC) + DT=Leader
+  TD_NEO_L3MO_LEAD,     // Neo „#“-Position: L3_MO_NEO + DT=Leader
+  TD_NOTED_L3MO_LEAD,   // Noted „Ä“-Position: L3_MO_NOTED + DT=Leader
+};
+
+/* ── Konfigurationen ─────────────────────────────────────────────────────── */
+static td_lt_lead_t td_caps_sys_cfg = {
+    .layer = _SYS, .tap_kc = KC_ESC, .on = false};
+static td_lt_lead_t td_caps_neo_cfg = {
+    .layer = _NEOQWERTZ3, .tap_kc = KC_ESC, .on = false};
+static td_lt_lead_t td_caps_noted_cfg = {
+    .layer = _NOTED3, .tap_kc = KC_ESC, .on = false};
+
+static td_mo_lead_t td_neo_l3mo_cfg = {.layer = _NEOQWERTZ3, .on = false};
+static td_mo_lead_t td_noted_l3mo_cfg = {.layer = _NOTED3, .on = false};
+
+/* ── Registrierung ───────────────────────────────────────────────────────── */
+
+tap_dance_action_t PROGMEM tap_dance_actions[] = {
+    [TD_CAPS_SYS_LEAD] =
+        {
+            .fn = {NULL, td_lt_finished, td_lt_reset, NULL},
+            .user_data = &td_caps_sys_cfg,
+        },
+    [TD_CAPS_NEO_LEAD] =
+        {
+            .fn = {NULL, td_lt_finished, td_lt_reset, NULL},
+            .user_data = &td_caps_neo_cfg,
+        },
+    [TD_CAPS_NOTED_LEAD] =
+        {
+            .fn = {NULL, td_lt_finished, td_lt_reset, NULL},
+            .user_data = &td_caps_noted_cfg,
+        },
+
+    [TD_NEO_L3MO_LEAD] =
+        {
+            .fn = {NULL, td_mo_finished, td_mo_reset, NULL},
+            .user_data = &td_neo_l3mo_cfg,
+        },
+    [TD_NOTED_L3MO_LEAD] =
+        {
+            .fn = {NULL, td_mo_finished, td_mo_reset, NULL},
+            .user_data = &td_noted_l3mo_cfg,
+        },
+};
 #endif
 
 // ── Beim Start Linux-Unicode ─────────────────────────────────────────────────
@@ -71,15 +280,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_QWERTZ] = LAYOUT_ISO(
     /* Row1 */ QK_GESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_SS, DE_ACUT, KC_BSPC,
     /* Row2 */ KC_TAB, KC_Q, KC_W, KC_E, KC_R, KC_T, DE_Z, KC_U, KC_I, KC_O, KC_P, DE_UDIA, DE_PLUS,
-    /* Row3 */ SYS_ESC, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, DE_ODIA, DE_ADIA, DE_HASH, KC_ENT,
+    /* Row3 */ TD(TD_CAPS_SYS_LEAD), KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, DE_ODIA, DE_ADIA, DE_HASH, KC_ENT,
     /* Row4 */ KC_LSFT, DE_LABK, DE_Y, KC_X, KC_C, KC_V, KC_B, KC_N, KC_M, DE_COMM, DE_DOT, DE_MINS, KC_RSFT,
-    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, KC_0, KC_RCTL),
+    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, QK_LEAD, KC_RCTL),
 
   // ───────── Layer 1: NeoQwertz Ebene 1 (klein) ─────────
   [_NEOQWERTZ1] = LAYOUT_ISO(
     /* Row1 */ KC_ESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_SS, DE_EQL, KC_BSPC,
     /* Row2 */ KC_TAB, KC_Q, KC_W, KC_E, KC_R, KC_T, DE_Z, KC_U, KC_I, KC_O, KC_P, DE_UDIA, DE_PLUS,
-    /* Row3 */ L3_ESC_NEO, KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, DE_ODIA, DE_ADIA, L3_MO_NEO, KC_ENT,
+    /* Row3 */ TD(TD_CAPS_NEO_LEAD), KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, DE_ODIA, DE_ADIA, TD(TD_NEO_L3MO_LEAD), KC_ENT,
     /* Row4 */ NEO_SHIFT, L4_MO_NEO, DE_Y, KC_X, KC_C, KC_V, KC_B, KC_N, KC_M, DE_COMM, DE_DOT, DE_MINS, NEO_SHIFT,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO_NEO, KC_RGUI, KC_1, KC_RCTL),
 
@@ -101,7 +310,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     DE_GRV,           // `  (Shift+´)        — wie Standard-DE
     KC_BSPC,
     /* Row2 */ KC_TRNS, S(KC_Q), S(KC_W), S(KC_E) /*€*/, S(KC_R), S(KC_T), S(DE_Z), S(KC_U), S(KC_I), S(KC_O), S(KC_P), S(DE_UDIA), DE_ASTR,
-    /* Row3 */ L3_ESC_NEO, S(KC_A), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(DE_ODIA), S(DE_ADIA), L3_MO_NEO, S(KC_ENT),
+    /* Row3 */ TD(TD_CAPS_NEO_LEAD), S(KC_A), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(DE_ODIA), S(DE_ADIA), TD(TD_NEO_L3MO_LEAD), S(KC_ENT),
     /* Row4 */ KC_TRNS, L4_MO_NEO, S(DE_Y), S(KC_X), S(KC_C), S(KC_V), S(KC_B), S(KC_N), S(KC_M), DE_SCLN, DE_COLN, DE_UNDS, KC_TRNS,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO_NEO, KC_RGUI, KC_2, KC_RCTL),
 
@@ -126,7 +335,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Row2 (Q W E R T  Z  U  I  O  P  Ü   +) – Programmierzeichen */
     KC_NO, DE_AT, DE_UNDS, DE_LBRC, DE_RBRC, DE_CIRC, DE_EXLM, DE_LABK, DE_RABK, DE_EQL, DE_AMPR, DE_DLR, DE_TILD,
     /* Row3 (Caps A S D F G  H  J  K  L  Ö   Ä   #) */
-    L3_ESC_NEO, DE_BSLS, DE_SLSH, DE_LCBR, DE_RCBR, DE_ASTR, DE_QUES, DE_LPRN, DE_RPRN, DE_MINS, DE_COLN, DE_AT, L3_MO_NEO, KC_ENT,
+    TD(TD_CAPS_NEO_LEAD), DE_BSLS, DE_SLSH, DE_LCBR, DE_RCBR, DE_ASTR, DE_QUES, DE_LPRN, DE_RPRN, DE_MINS, DE_COLN, DE_AT, TD(TD_NEO_L3MO_LEAD), KC_ENT,
     /* Row4 (<>  Y  X  C  V  B   N   M   ,    .     -) */
     KC_LSFT, L4_MO_NEO, DE_HASH, DE_DLR, DE_PIPE, DE_TILD, DE_GRV, DE_PLUS, DE_PERC, DE_DQUO, DE_QUOT, DE_SCLN, KC_RSFT,
     /* Row5 (Mods/Space-FN bleiben nutzbar, nichts transparent) */
@@ -150,7 +359,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_NOTED1] = LAYOUT_ISO(
     /* R1(14) */ SYS_ESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_MINS,  DE_ACUT, KC_BSPC,
     /* R2(13) */ KC_TAB,  DE_Z, DE_Y, KC_U, KC_A, KC_Q, KC_P, KC_B, KC_M, KC_L, KC_F, KC_J, DE_SS,
-    /* R3(14) */ L3_ESC_NOTED , KC_C, KC_S, KC_I, KC_E, KC_O, KC_D, KC_T, KC_N, KC_R, KC_H, L3_MO_NOTED, DE_ACUT, KC_ENT,
+    /* R3(14) */ TD(TD_CAPS_NOTED_LEAD), KC_C, KC_S, KC_I, KC_E, KC_O, KC_D, KC_T, KC_N, KC_R, KC_H, TD(TD_NOTED_L3MO_LEAD), DE_ACUT, KC_ENT,
     /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, KC_V, KC_X, DE_UDIA, DE_ADIA, DE_ODIA, KC_W, KC_G, DE_COMM, DE_DOT, KC_K, NOTED_SHIFT,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO_NOTED, KC_RGUI, KC_5, KC_RCTL),
 
@@ -173,7 +382,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     DE_GRV,           // `  (Shift+´)        — wie Standard-DE
     KC_BSPC,
     /* R2(13) */ KC_TAB,  S(DE_Z),    S(DE_Y),   S(KC_U),    S(KC_A),    S(KC_Q),    S(KC_P), S(KC_B), S(KC_M), S(KC_L), S(KC_F), S(KC_J), DE_SS,
-    /* R3(14) */ L3_ESC_NOTED, S(KC_C),    S(KC_S),   S(KC_I),    S(KC_E),    S(KC_O),    S(KC_D), S(KC_T), S(KC_N), S(KC_R), S(KC_H), L3_MO_NOTED, DE_ACUT, KC_ENT,
+    /* R3(14) */ TD(TD_CAPS_NOTED_LEAD), S(KC_C),    S(KC_S),   S(KC_I),    S(KC_E),    S(KC_O),    S(KC_D), S(KC_T), S(KC_N), S(KC_R), S(KC_H), TD(TD_NOTED_L3MO_LEAD), DE_ACUT, KC_ENT,
     /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, S(KC_V),   S(KC_X),   S(DE_UDIA), S(DE_ADIA), S(DE_ODIA), S(KC_W), S(KC_G), DE_MINS, KC_DOT, S(KC_K), NOTED_SHIFT,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN,   L4_MO_NOTED,  KC_RGUI, KC_6, KC_RCTL),
 
@@ -197,7 +406,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_DEL,
 
     /* R2(13) */ KC_NO, DE_AT, DE_UNDS, DE_LBRC, DE_RBRC, DE_CIRC, DE_EXLM, DE_LABK, DE_RABK, DE_EQL, DE_AMPR, DE_AT, DE_TILD,
-    /* R3(14) */ L3_ESC_NOTED, DE_BSLS, DE_SLSH, DE_LCBR, DE_RCBR, DE_ASTR, DE_QUES, DE_LPRN, DE_RPRN, DE_MINS, DE_COLN, L3_MO_NOTED, DE_AT, KC_ENT,
+    /* R3(14) */ TD(TD_CAPS_NOTED_LEAD), DE_BSLS, DE_SLSH, DE_LCBR, DE_RCBR, DE_ASTR, DE_QUES, DE_LPRN, DE_RPRN, DE_MINS, DE_COLN, TD(TD_NOTED_L3MO_LEAD), DE_AT, KC_ENT,
     /* R4(13) */ KC_LSFT, L4_MO_NOTED, DE_HASH, DE_DLR, DE_PIPE, DE_TILD, DE_GRV, DE_PLUS, DE_PERC, DE_DQUO, DE_QUOT, DE_SCLN, KC_RSFT,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, KC_7, KC_RCTL),
 
