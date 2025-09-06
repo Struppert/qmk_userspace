@@ -156,7 +156,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // ─────────────────────────────────────────────────────────────────────────────
   // NOTED Ebene 2 (Shift) — korrespondierend zu Ebene 1
   [_NOTED2] = LAYOUT_ISO(
-    /* R1(14) */ SYS_ESC, KC_EXLM, KC_AT,  KC_HASH, KC_DLR, KC_PERC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, DE_UNDS, DE_ACUT, KC_BSPC,
+    /* R1(14) */ 
+    KC_TRNS,
+    DE_DEG,           // °  (Shift+1)        — Neo: Degree auf 1
+    DE_SECT,          // §  (Shift+2)
+    UC(0x2113),       // ℓ  (Shift+3)
+    UC(0x00BB),       // »  (Shift+4)
+    UC(0x00AB),       // «  (Shift+5)
+    DE_DLR,           // $  (Shift+6)
+    RALT(KC_E),       // €  (Shift+7)        — ohne Unicode, wie gewünscht
+    UC(0x201E),       // „  (Shift+8)
+    UC(0x201C),       // “  (Shift+9)
+    UC(0x201D),       // ”  (Shift+0)
+    UC(0x1E9E),       // ẞ  (Shift+ß)
+    DE_GRV,           // `  (Shift+´)        — wie Standard-DE
+    KC_BSPC,
     /* R2(13) */ KC_TAB,  S(DE_Z),    S(DE_Y),   S(KC_U),    S(KC_A),    S(KC_Q),    S(KC_P), S(KC_B), S(KC_M), S(KC_L), S(KC_F), S(KC_J), DE_SS,
     /* R3(14) */ L3_ESC_NOTED, S(KC_C),    S(KC_S),   S(KC_I),    S(KC_E),    S(KC_O),    S(KC_D), S(KC_T), S(KC_N), S(KC_R), S(KC_H), L3_MO_NOTED, DE_ACUT, KC_ENT,
     /* R4(13) */ NOTED_SHIFT, L4_MO_NOTED, S(KC_V),   S(KC_X),   S(DE_UDIA), S(DE_ADIA), S(DE_ODIA), S(KC_W), S(KC_G), DE_MINS, KC_DOT, S(KC_K), NOTED_SHIFT,
@@ -186,15 +200,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, DM_PLY1, KC_NO, DM_REC1, DM_REC2, DM_RSTP, KC_NO, KC_NO, KC_NO,
     /* Row3 */ KC_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, DM_PLY2, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_NO, KC_NO, KC_NO, KC_ENT,
     /* Row4 */ KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, MO(_RGB), MO(_SYS), KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
-    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_5, KC_RCTL),
+    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_9, KC_RCTL),
 
   // ───────── Layer 6: SYS (Service/Bootloader) ─────────
   [_SYS] = LAYOUT_ISO(
     /* Row1 */ KC_ESC, QK_BOOT, EE_CLR, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_BSPC,
     /* Row2 */ KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    /* Row3 */ KC_CAPS, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
-    /* Row4 */ KC_LSFT, L4_MO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
-    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_6, KC_RCTL
+    /* Row3 */ KC_CAPS, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_ENT,
+    /* Row4 */ KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
+    /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_A, KC_RCTL
   ),
 
   // ───────── Layer 7: RGB (alle RGB-Matrix Controls) ─────────
