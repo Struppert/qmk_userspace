@@ -13,8 +13,8 @@ enum layers {
   _QWERTZ = 0,
   _NEOQWERTZ1,
   _NEOQWERTZ2,
-  _NEO3,
-  _NEO4,
+  _NEOQWERTZ3,
+  _NEOQWERTZ4,
   _NOTED1,
   _NOTED2,
   _NOTED3,
@@ -36,10 +36,11 @@ enum custom_keycodes {
 #define SYS_ESC LT(_SYS, KC_ESC)
 #define SP_FN LT(_FN, KC_SPC)
 #define SYS_MO MO(_SYS)
+#define RGB_MO MO(_RGB)
 
-#define L3_ESC_NEO LT(_NEO3, KC_ESC)
-#define L3_MO_NEO MO(_NEO3)
-#define L4_MO_NEO MO(_NEO4)
+#define L3_ESC_NEO LT(_NEOQWERTZ3, KC_ESC)
+#define L3_MO_NEO MO(_NEOQWERTZ3)
+#define L4_MO_NEO MO(_NEOQWERTZ4)
 #define NEO_SHIFT MO(_NEOQWERTZ2)
 
 #define L3_ESC_NOTED LT(_NOTED3, KC_ESC)
@@ -100,12 +101,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     DE_GRV,           // `  (Shift+´)        — wie Standard-DE
     KC_BSPC,
     /* Row2 */ KC_TRNS, S(KC_Q), S(KC_W), S(KC_E) /*€*/, S(KC_R), S(KC_T), S(DE_Z), S(KC_U), S(KC_I), S(KC_O), S(KC_P), S(DE_UDIA), DE_ASTR,
-    /* Row3 */ L3_ESC_NEO, S(KC_A), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(DE_UDIA), S(DE_ADIA), L3_MO_NEO, S(KC_ENT),
+    /* Row3 */ L3_ESC_NEO, S(KC_A), S(KC_S), S(KC_D), S(KC_F), S(KC_G), S(KC_H), S(KC_J), S(KC_K), S(KC_L), S(DE_ODIA), S(DE_ADIA), L3_MO_NEO, S(KC_ENT),
     /* Row4 */ KC_TRNS, L4_MO_NEO, S(DE_Y), S(KC_X), S(KC_C), S(KC_V), S(KC_B), S(KC_N), S(KC_M), DE_SCLN, DE_COLN, DE_UNDS, KC_TRNS,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO_NEO, KC_RGUI, KC_2, KC_RCTL),
 
   // ───────── Layer 3: NeoQwertz Ebene 3 (Programmieren) ─────────
-  [_NEO3] = LAYOUT_ISO(
+  [_NEOQWERTZ3] = LAYOUT_ISO(
     /* Row1 (Ziffernreihe ohne Ziffern) */
     UC(0x21BB), /* ^  → ↻  („turning“/Drehtaste) */
     UC(0x00B9), /* 1  → ¹ */
@@ -132,7 +133,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_LCTL, KC_LGUI, KC_LALT, SP_FN, L4_MO_NEO, KC_RGUI, KC_3, KC_RCTL),
 
   // ───────── Layer 4: NeoQwertz Ebene 4 (Navi/Numblock & Extras) ─────────
-  [_NEO4] = LAYOUT_ISO(
+  [_NEOQWERTZ4] = LAYOUT_ISO(
     /* Row1 (oper./Funktionen rechts, Rest neutral) — 14 Keys */
     KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_SLSH, KC_ASTR, KC_MINS,
     /* Row2 (Q W E R T  Z   U   I   O   P   Ü   +) — 13 Keys */
@@ -177,16 +178,31 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN,   L4_MO_NOTED,  KC_RGUI, KC_6, KC_RCTL),
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // NOTED Ebene 3: 1:1 aus _NEO3 übernehmen, NUR die zwei Felder in R4 tauschen
+  // NOTED Ebene 3:
   [_NOTED3] = LAYOUT_ISO(
-    /* R1(14) */ SYS_ESC, KC_PLUS, KC_LBRC, KC_RBRC, KC_SLSH, KC_EQL,  KC_ASTR, KC_LCBR, KC_RCBR, KC_LABK, KC_RABK, KC_BSLS, KC_GRV,  KC_DEL,
-    /* R2(13) */ KC_TAB,  KC_AT,   KC_DQUO, KC_LPRN, KC_RPRN, KC_EXLM, KC_QUOT, KC_HASH, KC_PERC, KC_MINS, KC_COLN, KC_SCLN, KC_PIPE,
-    /* R3(14) */ SYS_ESC, KC_CIRC, KC_QUES, KC_LABK, KC_RABK, KC_TILD, KC_AMPR, KC_UNDS, DE_EURO, KC_PPLS, KC_EQL,  DE_ACUT,  KC_BSPC, KC_ENT,
-    /* R4(13) */ KC_LSFT, KC_DLR,  KC_DOT, KC_PGUP, KC_PGDN, KC_HOME, KC_END,  L3_MO_NOTED,     KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT, KC_UP,
-    /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN,   KC_RALT, KC_RGUI, KC_7, KC_RCTL),
+    /* R1(14) */
+    UC(0x21BB), /* ^  → ↻  („turning“/Drehtaste) */
+    UC(0x00B9), /* 1  → ¹ */
+    UC(0x00B2), /* 2  → ² */
+    UC(0x00B3), /* 3  → ³ */
+    UC(0x203A), /* 4  → › */
+    UC(0x2039), /* 5  → ‹ */
+    UC(0x00A2), /* 6  → ¢ */
+    UC(0x00A5), /* 7  → ¥ */
+    UC(0x201A), /* 8  → ‚ */
+    UC(0x2018), /* 9  → ‘ */
+    UC(0x2019), /* 0  → ’ (Apostroph) */
+    DE_MINS,    /* ß → -  (Hyphen als Fallback, leicht erreichbar) */
+    UC(0x00B7), /* ´ → ·  (Mittelpunkt) */
+    KC_DEL,
+
+    /* R2(13) */ KC_NO, DE_AT, DE_UNDS, DE_LBRC, DE_RBRC, DE_CIRC, DE_EXLM, DE_LABK, DE_RABK, DE_EQL, DE_AMPR, DE_AT, DE_TILD,
+    /* R3(14) */ L3_ESC_NOTED, DE_BSLS, DE_SLSH, DE_LCBR, DE_RCBR, DE_ASTR, DE_QUES, DE_LPRN, DE_RPRN, DE_MINS, DE_COLN, L3_MO_NOTED, DE_AT, KC_ENT,
+    /* R4(13) */ KC_LSFT, L4_MO_NOTED, DE_HASH, DE_DLR, DE_PIPE, DE_TILD, DE_GRV, DE_PLUS, DE_PERC, DE_DQUO, DE_QUOT, DE_SCLN, KC_RSFT,
+    /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, KC_7, KC_RCTL),
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // NOTED Ebene 4: 1:1 aus _NEO4 übernehmen, NUR die zwei Felder in R4 tauschen
+  // NOTED Ebene 4:
   [_NOTED4] = LAYOUT_ISO(
     /* R1(14) */ SYS_ESC, KC_F1,  KC_F2,  KC_F3,  KC_F4,  KC_F5,  KC_F6,  KC_F7,  KC_F8,  KC_F9,  KC_F10, KC_F11, KC_F12, KC_INS,
     /* R2(13) */ KC_TAB,  KC_ESC, KC_HOME,KC_UP,  KC_END, KC_PGUP, KC_PSCR,KC_INS, KC_DEL, KC_LEFT,KC_DOWN,KC_RGHT, KC_PAUS,
@@ -199,7 +215,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Row1 */ KC_ESC, KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12, KC_DEL,
     /* Row2 */ KC_TAB, QK_MACRO_6, QK_MACRO_4, QK_MACRO_2, QK_MACRO_0, DM_PLY1, KC_NO, DM_REC1, DM_REC2, DM_RSTP, KC_NO, KC_NO, KC_NO,
     /* Row3 */ KC_ESC, QK_MACRO_7, QK_MACRO_5, QK_MACRO_3, QK_MACRO_1, DM_PLY2, KC_LEFT, KC_DOWN, KC_UP, KC_RGHT, KC_NO, KC_NO, KC_NO, KC_ENT,
-    /* Row4 */ KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, MO(_RGB), MO(_SYS), KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
+    /* Row4 */ KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, RGB_MO, SYS_MO, KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_9, KC_RCTL),
 
   // ───────── Layer 6: SYS (Service/Bootloader) ─────────
@@ -333,31 +349,30 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
+#ifdef RGB_MATRIX_ENABLE
   switch (get_highest_layer(state)) {
   case _QWERTZ:
-    rgb_matrix_set_color_all(0, 0, 0);
-    break; // aus
+    rgb_matrix_set_color_all(20, 20, 20); // weiß
+    break;
   case _NEOQWERTZ1:
-    rgb_matrix_set_color_all(0, 20, 0);
-    break; // grün
-  case _NEOQWERTZ2:
-    rgb_matrix_set_color_all(20, 20, 0);
-    break; // gelb
-  case _NEO3:
-    rgb_matrix_set_color_all(20, 0, 20);
-    break; // magenta
-  case _NEO4:
-    rgb_matrix_set_color_all(0, 0, 20);
-    break; // blau
+    rgb_matrix_set_color_all(20, 20, 0); // gelb
+    break;
+  case _NOTED1:
+    rgb_matrix_set_color_all(20, 0, 20); // magenta
+    break;
   case _FN:
-    rgb_matrix_set_color_all(0, 20, 20);
-    break; // cyan
+    rgb_matrix_set_color_all(0, 20, 20); // cyan
+    break;
   case _SYS:
-    rgb_matrix_set_color_all(20, 0, 0);
-    break; // rot
+    rgb_matrix_set_color_all(20, 0, 0); // rot
+    break;
   case _RGB:
-    rgb_matrix_set_color_all(20, 20, 20);
-    break; // weiß
+    rgb_matrix_set_color_all(0, 20, 0); // grün
+    break;
+  default:
+    rgb_matrix_set_color_all(0, 0, 0); // aus
+    break;
   }
+#endif
   return state;
 }
