@@ -146,7 +146,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_NOTED1] = LAYOUT_ISO(
     /* R1(14) */ SYS_ESC, KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, DE_SS,  DE_ACUT, KC_BSPC,
     /* R2(13) */ KC_TAB,  KC_Z, KC_Y, KC_U, KC_A, KC_Q, KC_P, KC_B, KC_M, KC_L, KC_F, KC_J,   DE_UDIA,
-    /* R3(14) */ KC_CAPS, KC_C, KC_S, KC_I, KC_E, KC_O, KC_D, KC_T, KC_N, KC_R, KC_H, DE_ACUT, DE_MINS, KC_ENT,
+    /* R3(14) */ SYS_ESC, KC_C, KC_S, KC_I, KC_E, KC_O, KC_D, KC_T, KC_N, KC_R, KC_H, DE_ACUT, DE_MINS, KC_ENT,
     /* R4(13) */ KC_LSFT, KC_V, KC_X, DE_UDIA, DE_ADIA, DE_ODIA, KC_W, KC_G, KC_COMM, KC_DOT, RM3,     KC_RSFT, KC_UP,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_RALT, KC_RGUI, KC_5, KC_RCTL),
 
@@ -155,7 +155,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_NOTED2] = LAYOUT_ISO(
     /* R1(14) */ SYS_ESC, KC_EXLM, KC_AT,  KC_HASH, KC_DLR, KC_PERC, KC_CIRC, KC_AMPR, KC_ASTR, KC_LPRN, KC_RPRN, DE_UNDS, DE_ACUT, KC_BSPC,
     /* R2(13) */ KC_TAB,  KC_Z,    KC_Y,   KC_U,    KC_A,    KC_Q,    KC_P,    KC_B,    KC_M,    KC_L,    KC_F,    KC_J,    DE_SS,
-    /* R3(14) */ KC_CAPS, KC_C,    KC_S,   KC_I,    KC_E,    KC_O,    KC_D,    KC_T,    KC_N,    KC_R,    KC_H, DE_ACUT, KC_UNDS, KC_ENT,
+    /* R3(14) */ SYS_ESC, KC_C,    KC_S,   KC_I,    KC_E,    KC_O,    KC_D,    KC_T,    KC_N,    KC_R,    KC_H, DE_ACUT, KC_UNDS, KC_ENT,
     /* R4(13) */ KC_LSFT, KC_V,    KC_X,   DE_UDIA, DE_ADIA, DE_ODIA, KC_W, KC_G, KC_SCLN, KC_COLN, RM3,     KC_RSFT, KC_UP,
     /* R5(8)  */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN,   KC_RALT,  KC_RGUI, KC_6, KC_RCTL),
 
@@ -189,7 +189,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [_SYS] = LAYOUT_ISO(
     /* Row1 */ KC_ESC, QK_BOOT, EE_CLR, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_BSPC,
     /* Row2 */ KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
-    /* Row3 */ KC_ESC, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
+    /* Row3 */ KC_CAPS, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, L3_MO, KC_ENT,
     /* Row4 */ KC_LSFT, L4_MO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
     /* Row5 */ KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_6, KC_RCTL
   ),
