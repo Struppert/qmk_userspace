@@ -9,6 +9,11 @@
 #define SENDSTRING_LANGUAGE de_DE
 #include "sendstring_german.h"
 
+static inline void send_and_enter(const char *s) {
+  send_string(s);
+  tap_code(KC_ENT);
+}
+
 #if defined(LEADER_ENABLE)
 // ── Leader Sequenzen ───────────────────────────
 void leader_start_user(void) {
@@ -81,6 +86,58 @@ void leader_end_user(void) {
     SEND_STRING("git tag -a v");
   } else if (leader_sequence_three_keys(KC_G, KC_T, KC_P)) {
     send_string("git push --tags\n");
+  }
+
+  // ── fzf ───────────────────────────────────────────────────────────────
+  // LEAD f f  → fzf starten (einfach)
+  else if (leader_sequence_two_keys(KC_F, KC_F)) {
+    send_and_enter("fzf");
+  }
+  // LEAD f e  → fzf-Auswahl im $EDITOR öffnen (eine Datei)
+  else if (leader_sequence_two_keys(KC_F, KC_E)) {
+    send_and_enter("fzf | xargs -r $EDITOR");
+  }
+  // LEAD f p  → fzf mit Vorschau (bat) – hübsche Vorschau rechts
+  else if (leader_sequence_two_keys(KC_F, KC_P)) {
+    send_and_enter(
+        "fzf --preview 'bat --style=numbers --color=always {} | head -500'");
+  }
+  // LEAD g f f → git ls-files | fzf (nur getrackte Dateien)
+  else if (leader_sequence_three_keys(KC_G, KC_F, KC_F)) {
+    send_and_enter("git ls-files | fzf");
+  }
+
+  // ── ripgrep (rg) ──────────────────────────────────────────────────────
+  // Basis: versteckte Dateien mitnehmen, .git ausschließen, Zeilennummern
+  // LEAD r r  → rg <dein-suchbegriff> (Cursor in Anführungszeichen)
+  else if (leader_sequence_two_keys(KC_R, KC_R)) {
+    SEND_STRING("rg -n --hidden --glob '!.git' \"\"");
+    tap_code(KC_LEFT); // Cursor zwischen die Anführungszeichen
+  }
+  // LEAD r s  → "smart case" (-S) aktivieren
+  else if (leader_sequence_two_keys(KC_R, KC_S)) {
+    SEND_STRING("rg -n -S --hidden --glob '!.git' \"\"");
+    tap_code(KC_LEFT);
+  }
+  // LEAD r a  → in ALLEN Branch-Dateien suchen (git ls-files + rg)
+  else if (leader_sequence_two_keys(KC_R, KC_A)) {
+    SEND_STRING("git ls-files | rg -n --hidden --glob '!.git' \"\"");
+    tap_code(KC_LEFT);
+  }
+  // LEAD r l  → rg + less -R (scrollbare Ausgabe)
+  else if (leader_sequence_two_keys(KC_R, KC_L)) {
+    SEND_STRING("rg -n --hidden --glob '!.git' \"\" | less -R");
+    tap_code(KC_LEFT);
+  }
+  // LEAD r g r → nur in *.go suchen (Beispiel für Globs)
+  else if (leader_sequence_three_keys(KC_R, KC_G, KC_R)) {
+    SEND_STRING("rg -n --hidden --glob '!.git' -g '*.go' \"\"");
+    tap_code(KC_LEFT);
+  }
+  // LEAD r b  → nur in *.rs (Rust) suchen (weiteres Beispiel)
+  else if (leader_sequence_two_keys(KC_R, KC_B)) {
+    SEND_STRING("rg -n --hidden --glob '!.git' -g '*.rs' \"\"");
+    tap_code(KC_LEFT);
   }
 }
 #endif // LEADER_ENABLE
