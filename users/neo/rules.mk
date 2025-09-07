@@ -19,3 +19,5 @@ LEADER_ENABLE    = yes
 DYNAMIC_MACRO_ENABLE = yes
 
 RGB_MATRIX_ENABLE = yes
+
+SRC += leader.c
