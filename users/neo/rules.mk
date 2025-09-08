@@ -22,3 +22,4 @@ RGB_MATRIX_ENABLE = yes
 
 SRC += leader.c
 SRC += os_state.c
+SRC += keymap_logic.c
