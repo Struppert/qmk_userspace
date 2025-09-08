@@ -1,26 +1,9 @@
 // tap_dance_bindings.inc  (vom board-spezifischen keymap.c inkludieren)
 #ifdef TAP_DANCE_ENABLE
   #include "process_tap_dance.h"
-  #include "tap_dance_ids.h" 
+  #include "tap_dance_ids.h"
+  #include "tap_dance_impl.h"
 
-  // Vorwärtsdeklarationen der Callback-Funktionen (implementiert in keymap_logic.c)
-  void td_test_finished(tap_dance_state_t *s, void *ud);
-  void td_test_reset(tap_dance_state_t *s, void *ud);
-
-  void td_caps_sys_finished(tap_dance_state_t *s, void *ud);
-  void td_caps_sys_reset(tap_dance_state_t *s, void *ud);
-
-  void td_caps_neo_finished(tap_dance_state_t *s, void *ud);
-  void td_caps_neo_reset(tap_dance_state_t *s, void *ud);
-
-  void td_caps_noted_finished(tap_dance_state_t *s, void *ud);
-  void td_caps_noted_reset(tap_dance_state_t *s, void *ud);
-
-  void td_neo_l3mo_finished(tap_dance_state_t *s, void *ud);
-  void td_neo_l3mo_reset(tap_dance_state_t *s, void *ud);
-
-  void td_noted_l3mo_finished(tap_dance_state_t *s, void *ud);
-  void td_noted_l3mo_reset(tap_dance_state_t *s, void *ud);
 
   // Das Array MUSS in diesem TU definiert sein, damit Introspection sizeof(...) kann
   tap_dance_action_t PROGMEM tap_dance_actions[] = {
