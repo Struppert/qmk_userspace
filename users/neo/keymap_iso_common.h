@@ -1,8 +1,11 @@
 #pragma once
 #include QMK_KEYBOARD_H
+#include "eeconfig.h" // EEPROM-API
 #include "keymap_extras/keymap_german.h"
 #include "process_unicode.h"
 #include "quantum.h"
+
+#include "os_state.h"
 
 #ifdef TAP_DANCE_ENABLE
 #include "process_tap_dance.h"
@@ -40,6 +43,10 @@ enum custom_keycodes {
   UC_SET_WIN,
   UC_SET_WINC,
   UC_MODE_CYCLE,
+  KC_OS_WIN,
+  KC_OS_LNX,
+  KC_OS_MAC,
+  KC_OS_CYCLE,
 };
 
 // Mod-/Layer-Aliase
@@ -218,11 +225,6 @@ tap_dance_action_t PROGMEM tap_dance_actions[] = {
 };
 #endif /* TAP_DANCE_ENABLE */
 
-// ── Beim Start Linux-Unicode ─────────────────────────────────────────────────
-void keyboard_post_init_user(void) {
-  set_unicode_input_mode(UNICODE_MODE_LINUX);
-}
-
 // clang-format off
 // ──────────────────────────────────────────────────────────────────────────────
 // Keymaps (DEINE vollständigen Layer aus deiner letzten Version)
@@ -315,7 +317,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_ESC, QK_BOOT, EE_CLR, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_BSPC,
     KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
     KC_CAPS, UC_MODE_CYCLE, UC_SET_LNX, UC_SET_WIN, UC_SET_WINC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_ENT,
-    KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
+    KC_LSFT, KC_OS_CYCLE, KC_OS_WIN, KC_OS_LNX, KC_OS_MAC, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_RSFT,
     KC_LCTL, KC_LGUI, KC_LALT, SP_FN, KC_NO, KC_RGUI, KC_A, KC_RCTL),
 
   // ───────── Layer 7: RGB ─────────
@@ -366,50 +368,41 @@ uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
   }
 }
 
-static void set_uc_and_optionally_feedback(uint8_t mode) {
-  set_unicode_input_mode(mode);
-#ifdef RGB_MATRIX_ENABLE
-  uint8_t r = 0, g = 0, b = 0;
-  switch (mode) {
-  case UNICODE_MODE_LINUX:
-    g = 20;
-    break; // grün
-  case UNICODE_MODE_WINDOWS:
-    r = 20;
-    break; // rot
-  case UNICODE_MODE_WINCOMPOSE:
-    r = 20;
-    b = 20;
-    break; // magenta
-  default:
-    b = 20;
-    break;
-  }
-  rgb_matrix_set_color_all(r, g, b);
-#endif
-}
-
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
   if (!record->event.pressed)
     return true;
   switch (keycode) {
+  case KC_OS_WIN:
+    os_set(OS_WIN);
+    return false;
+  case KC_OS_LNX:
+    os_set(OS_LNX);
+    return false;
+  case KC_OS_MAC:
+    os_set(OS_MAC);
+    return false;
+  case KC_OS_CYCLE:
+    os_cycle();
+    return false;
+
   case UC_SET_LNX:
-    set_uc_and_optionally_feedback(UNICODE_MODE_LINUX);
+    uc_set_and_feedback(UNICODE_MODE_LINUX);
     return false;
   case UC_SET_WIN:
-    set_uc_and_optionally_feedback(UNICODE_MODE_WINDOWS);
+    uc_set_and_feedback(UNICODE_MODE_WINDOWS);
     return false;
   case UC_SET_WINC:
-    set_uc_and_optionally_feedback(UNICODE_MODE_WINCOMPOSE);
+    uc_set_and_feedback(UNICODE_MODE_WINCOMPOSE);
     return false;
+
   case UC_MODE_CYCLE: {
     uint8_t m = get_unicode_input_mode();
     if (m == UNICODE_MODE_LINUX)
-      set_uc_and_optionally_feedback(UNICODE_MODE_WINDOWS);
+      uc_set_and_feedback(UNICODE_MODE_WINDOWS);
     else if (m == UNICODE_MODE_WINDOWS)
-      set_uc_and_optionally_feedback(UNICODE_MODE_WINCOMPOSE);
+      uc_set_and_feedback(UNICODE_MODE_WINCOMPOSE);
     else
-      set_uc_and_optionally_feedback(UNICODE_MODE_LINUX);
+      uc_set_and_feedback(UNICODE_MODE_LINUX);
     return false;
   }
   }

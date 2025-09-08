@@ -21,3 +21,4 @@ DYNAMIC_MACRO_ENABLE = yes
 RGB_MATRIX_ENABLE = yes
 
 SRC += leader.c
+SRC += os_state.c

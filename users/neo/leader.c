@@ -1,14 +1,51 @@
 // users/neo/leader.c
+// ──────────────────────────────────────────────────────────────────────────────
+// Leader-Shortcuts mit OS-Auto-Routing
+//
+// Diese Datei stellt ein einheitliches Leader-Interface bereit: Du drückst
+// dieselbe Leader-Sequenz, egal ob der Host Windows (PowerShell),
+// Linux (fish) oder macOS (fish) ist. Die OS-spezifische Variante wird
+// automatisch über os_state::os_current() gewählt.
+//
+// • OS-Wahl (persistent) liegt in os_state (externes Modul).
+//   Leader:  LEAD O W / O L / O M   → OS setzen
+//            LEAD O C               → OS zyklisch
+//            LEAD O P               → aktuellen OS-Modus ausgeben
+//
+// • WezTerm-Intents: öffnen, splitten, Tabs/Panes steuern, neue Shell spawnen.
+//   Unter Windows wird PowerShell gestartet, unter Linux/macOS fish.
+//
+// • Bestehende Git / rg / fzf / zoxide / yazi Kommandos: Varianten für
+//   POSIX vs. PowerShell wurden vereinheitlicht. Es gibt jetzt eine Sequenz,
+//   die je nach os_current() die korrekte Befehlsfolge sendet.
+//
+// • SendString ist für deutsches Layout vorbereitet (sendstring_german.h).
+//   Falls du US-Layout sendest, kannst du das einkommentieren.
+//
+// Anpassungspunkte:
+//   - is_win()/is_linux()/is_mac() ggf. an deine os_state-Enums anpassen
+//   - WezTerm-Pfade/Startkommandos bei Bedarf ändern
+//   - Weitere Intents/Kommandos einfach über die Router-Helper hinzufügen
+// ──────────────────────────────────────────────────────────────────────────────
+
 #include QMK_KEYBOARD_H
 
 #if defined(LEADER_ENABLE)
 #include "process_leader.h"
 #endif
 
+#include "os_state.h" // stellt os_current(), os_set(), os_cycle(), os_print() bereit
+
 // ──────────────────────────────────────────────────────────────────────────────
 // SendString → korrekt für DE-Layout (nur hier einbinden, sonst Linker-Fehler!)
 #define SENDSTRING_LANGUAGE de_DE
 #include "sendstring_german.h"
+
+// ──────────────────────────────────────────────────────────────────────────────
+// OS Helpers (Router)
+static inline bool is_win(void) { return os_current() == OS_WIN; }
+static inline bool is_linux(void) { return os_current() == OS_LNX; }
+static inline bool is_mac(void) { return os_current() == OS_MAC; }
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Kleine Helfer
@@ -27,35 +64,234 @@ static inline void type_quotes_and_place_cursor(void) {
 }
 static inline void send_cmd_with_empty_quotes(const char *prefix) {
   // z.B. prefix="rg -n --hidden --glob '!.git' " → tippt prefix + "" und setzt
-  // den Cursor
+  // Cursor
   send_string(prefix);
   type_quotes_and_place_cursor();
 }
 static inline void send_line(const char *s) { send_and_enter(s); }
 
+// Router: wähle je OS richtigen Befehl (mac fällt auf POSIX zurück, wenn nicht
+// gesetzt)
+static inline void send_line_os(const char *posix_cmd, const char *pwsh_cmd,
+                                const char *mac_cmd_opt) {
+  if (is_win()) {
+    if (pwsh_cmd) {
+      send_line(pwsh_cmd);
+      return;
+    }
+    // Fallback: POSIX-Variante (nicht ideal, aber besser als NOP)
+    send_line(posix_cmd);
+  } else if (is_mac()) {
+    if (mac_cmd_opt && *mac_cmd_opt) {
+      send_line(mac_cmd_opt);
+      return;
+    }
+    send_line(posix_cmd);
+  } else {
+    send_line(posix_cmd);
+  }
+}
+
+// Wie oben, aber mit editierbarer Query ("" + Cursor)
+static inline void send_query_os(const char *posix_prefix,
+                                 const char *pwsh_prefix,
+                                 const char *mac_prefix_opt) {
+  if (is_win()) {
+    if (pwsh_prefix) {
+      send_cmd_with_empty_quotes(pwsh_prefix);
+      return;
+    }
+    send_cmd_with_empty_quotes(posix_prefix);
+  } else if (is_mac()) {
+    if (mac_prefix_opt && *mac_prefix_opt) {
+      send_cmd_with_empty_quotes(mac_prefix_opt);
+      return;
+    }
+    send_cmd_with_empty_quotes(posix_prefix);
+  } else {
+    send_cmd_with_empty_quotes(posix_prefix);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// WezTerm Intents (OS-spezifisch)
+static inline void intent_open_wezterm(void) {
+  if (is_win()) {
+    SEND_STRING(SS_LGUI("r"));
+    wait_ms(120);
+    send_string("wezterm");
+    tap_code(KC_ENTER);
+  } else if (is_linux() || is_mac()) {
+    // Öffne Standard-Terminal-Kürzel; alternativ direkt "wezterm" tippen:
+    send_line("wezterm");
+  }
+}
+
+static inline void
+intent_split_pane_h(void) { // horizontaler Split (nebeneinander)
+  if (is_win())
+    send_line("wezterm cli split-pane -- powershell");
+  else
+    send_line("wezterm cli split-pane -- fish");
+}
+static inline void
+intent_split_pane_v(void) { // vertikaler Split (untereinander)
+  if (is_win())
+    send_line("wezterm cli split-pane --horizontal -- powershell");
+  else
+    send_line("wezterm cli split-pane --horizontal -- fish");
+}
+
+static inline void intent_kill_pane(void) {
+  send_line("wezterm cli kill-pane");
+}
+static inline void intent_next_pane_right(void) {
+  send_line("wezterm cli activate-pane-direction Right");
+}
+static inline void intent_prev_pane_left(void) {
+  send_line("wezterm cli activate-pane-direction Left");
+}
+static inline void intent_new_tab_here(void) {
+  if (is_win())
+    send_line("wezterm cli spawn --cwd . -- powershell");
+  else
+    send_line("wezterm cli spawn --cwd . -- fish");
+}
+static inline void intent_close_tab(void) {
+  send_line("wezterm cli close-tab");
+}
+static inline void intent_activate_tab(uint8_t n) {
+  // n: 0..8; WezTerm nutzt Indexe – passe ggf. an
+  char buf[32];
+  snprintf(buf, sizeof(buf), "wezterm cli activate-tab %u", (unsigned)n);
+  send_line(buf);
+}
+
+// Dev-Environment
+static inline void intent_dev_env(void) {
+  if (is_win()) {
+    // Pfad ggf. an deine VS-Edition anpassen:
+    send_line("call \"C:\\Program Files\\Microsoft Visual "
+              "Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat\"");
+  } else {
+    send_line("source ~/.local/share/nvim/env.fish");
+  }
+}
+
+// Build & Run (Beispiel)
+static inline void intent_build_and_run_debug(void) {
+  if (is_win()) {
+    send_line(
+        "msbuild zis50.sln /p:Configuration=Debug && .\\bin\\Debug\\app.exe");
+  } else {
+    send_line("cmake --build build --config Debug && ./build/app");
+  }
+}
+
+// ripgrep im Projekt
+static inline void intent_ripgrep_project(void) {
+  // Beide können dieselbe rg-Zeile senden – Unterschiede entstehen meist erst
+  // in Pipes
+  send_cmd_with_empty_quotes("rg -n --hidden --glob '!.git' ");
+}
+
+// rg → fzf → nvim (+Zeile)
+static inline void intent_rg_fzf_open_editor_line(void) {
+  if (is_win()) {
+    send_line(
+        "rg --line-number --no-heading -S \"\" | fzf | ForEach-Object { $p = "
+        "$_ -split \":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }");
+    tap_code(KC_LEFT); // Cursor zurück in die Query
+  } else {
+    SEND_STRING("rg --line-number --no-heading --color=always -S \"\" | "
+                "fzf --ansi | "
+                "awk -F: '{print \"+\"$2\" \"$1}' | "
+#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+                "xargs -r ${EDITOR:-nvim}\n"
+#else
+                "xargs -r nvim\n"
+#endif
+    );
+    tap_code(KC_LEFT);
+  }
+}
+
+// git grep → fzf → nvim (+Zeile)
+static inline void intent_gitgrep_fzf_open_editor_line(void) {
+  if (is_win()) {
+    send_line("git grep -n -I -e \"\" | fzf | ForEach-Object { $p = $_ -split "
+              "\":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }");
+    tap_code(KC_LEFT);
+  } else {
+    SEND_STRING("git grep -n -I -e \"\" | "
+                "fzf --ansi | "
+                "awk -F: '{print \"+\"$2\" \"$1}' | "
+#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+                "xargs -r ${EDITOR:-nvim}\n"
+#else
+                "xargs -r nvim\n"
+#endif
+    );
+    tap_code(KC_LEFT);
+  }
+}
+
+// zoxide + fzf → cd
+static inline void intent_zoxide_fzf_cd(void) {
+  send_line_os("cd \"$(zoxide query -l | fzf)\"",      // POSIX
+               "Set-Location (zoxide query -l | fzf)", // PowerShell
+               NULL                                    // mac = POSIX
+  );
+}
+
+// yazi im Git-Root
+static inline void intent_yazi_git_root(void) {
+  send_line_os("yazi \"$(git rev-parse --show-toplevel)\"", // POSIX
+               "yazi (git rev-parse --show-toplevel)",      // PowerShell
+               NULL);
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Leader Cheat Sheet (kompakt & gruppiert)
 // Hinweis:
-//  • [POSIX] = bash/zsh/fish etc.   • [PowerShell] = Windows PowerShell
-//  • Befehle mit "" setzen den Cursor automatisch zwischen die
-//  Anführungszeichen • Viele Befehle enden auf "\n" (ENTER) und laufen sofort
-//  los
+//  • OS wird automatisch per os_current() erkannt (permanent wählbar via LEAD O
+//  …) • Befehle mit "" setzen den Cursor automatisch zwischen die Quotes •
+//  Viele Befehle enden auf ENTER und laufen sofort los
 // ──────────────────────────────────────────────────────────────────────────────
 //
 // Allgemein/Test
 //  LEAD A A         → "LEADER OK"
 //
-// ── Git: Status/Diff/Commit/Push/Log/Branch/Rebase/Tags ──────────────────────
+// OS wählen / anzeigen
+//  LEAD O W         → OS=Windows
+//  LEAD O L         → OS=Linux
+//  LEAD O M         → OS=macOS
+//  LEAD O C         → OS zyklisch (Win→Linux→mac→…)
+//  LEAD O P         → aktuellen OS-Modus in die aktive App tippen
+//
+// WezTerm
+//  LEAD T           → WezTerm öffnen (Win: Win+R→wezterm, andere: "wezterm")
+//  LEAD P S         → Pane split horizontal (nebeneinander)
+//  LEAD P V         → Pane split vertikal (untereinander)
+//  LEAD P X         → Pane kill
+//  LEAD P N         → Pane rechts aktivieren
+//  LEAD P P         → Pane links aktivieren
+//  LEAD T N         → Neuer Tab im aktuellen Pfad
+//  LEAD T C         → Tab schließen
+//  LEAD T 1..9      → Tab 1..9 aktivieren
+//
+// Git: Status/Diff/Commit/Push/Log/Branch/Rebase/Tags (OS-neutral)
 //  LEAD G S         → git status
 //  LEAD G A         → git add -A
 //  LEAD G D         → git diff
 //  LEAD G D S       → git diff --staged
 //
 //  LEAD G C         → git commit -m ""                      (Cursor in "")
-//  LEAD G C F       → git commit -m "fix: "                 (Cursor am
-//  Zeilenende) LEAD G C B       → git commit -m "feat: " LEAD G C R       → git
-//  commit -m "refactor: " LEAD G C T       → git commit -m "test: " LEAD G C D
-//  → git commit -m "docs: "
+//  LEAD G C F       → git commit -m "fix: "
+//  LEAD G C B       → git commit -m "feat: "
+//  LEAD G C R       → git commit -m "refactor: "
+//  LEAD G C T       → git commit -m "test: "
+//  LEAD G C D       → git commit -m "docs: "
 //
 //  LEAD G P         → git push
 //  LEAD G P 1       → git push --set-upstream origin HEAD
@@ -65,78 +301,59 @@ static inline void send_line(const char *s) { send_and_enter(s); }
 //  LEAD G L         → git log --oneline --graph --decorate -n 30
 //  LEAD G L A       → git log --all --decorate --oneline --graph
 //
-//  LEAD G B N       → git switch -c                          (neuen Branch
-//  anlegen) LEAD G B S       → git switch -                           (zurück
-//  zum vorherigen) LEAD G B D       → git branch -D (Branch löschen; Namen
-//  tippen)
+//  LEAD G B N       → git switch -c                        (neuen Branch
+//  anlegen) LEAD G B S       → git switch -                        (zurück zum
+//  vorherigen) LEAD G B D       → git branch -D (Branch löschen; Namen tippen)
 //
-//  LEAD G R         → git rebase -i HEAD~                    (Interaktiv; Zahl
-//  eintippen) LEAD G T N       → git tag -a v (Version eintippen) LEAD G T P →
+//  LEAD G R         → git rebase -i HEAD~                  (Interaktiv; Zahl
+//  tippen) LEAD G T N       → git tag -a v (Version tippen) LEAD G T P       →
 //  git push --tags
 //
-// ── Git Grep (Arbeitsbaum durchsuchen)
-// ────────────────────────────────────────
-//  LEAD G G         → git grep -n -I -e ""                   (Basis;
-//  nummeriert, no-binary) LEAD G G I       → git grep -n -I -i -e ""
-//  (ignore-case) LEAD G G W       → git grep -n -I -w -e "" (Wortgrenze) LEAD G
-//  G L       → git grep -I -l -e ""                   (nur Dateinamen) LEAD G G
-//  P       → git grep -n -I -e "" --                (Pathspec-Helfer; z. B.
-//  src/)
+// Git Grep (Arbeitsbaum durchsuchen; OS-Route)
+//  LEAD G G         → git grep -n -I -e ""                 (Basis; nummeriert)
+//  LEAD G G I       → git grep -n -I -i -e ""              (ignore-case)
+//  LEAD G G W       → git grep -n -I -w -e ""              (Wortgrenze)
+//  LEAD G G L       → git grep -I -l -e ""                 (nur Dateinamen)
+//  LEAD G G F       → git grep … | fzf → ${EDITOR}/nvim +Zeile (OS-Router)
 //
-//  LEAD G G F       → git grep … | fzf → ${EDITOR} +Zeile    [POSIX]
-//                      (öffnet Auswahlzeile direkt im Editor)
-//  LEAD G G W       → git grep … | fzf → nvim +Zeile         [PowerShell]
+// „Pickaxe“ (Historie nach Content-Änderungen durchsuchen)
+//  LEAD G P S       → git log -S "" --patch --stat         (String in Patches)
+//  LEAD G P G       → git log -G "" --patch --stat         (Regex in Patches)
 //
-// ── „Pickaxe“ (Historie nach Content-Änderungen durchsuchen) ─────────────────
-//  LEAD G P S       → git log -S "" --patch --stat           (String in
-//  Patches) LEAD G P G       → git log -G "" --patch --stat           (Regex in
-//  Patches)
-//
-// ── fzf
-// ───────────────────────────────────────────────────────────────────────
+// fzf
 //  LEAD F F         → fzf
-//  LEAD F E         → fzf | xargs -r $EDITOR                 [POSIX]
-//  LEAD F P         → fzf --preview 'bat …'                  (schöne Vorschau)
-//  LEAD G F F       → git ls-files | fzf                     (nur getrackte
-//  Dateien)
+//  LEAD F E         → fzf | xargs -r $EDITOR bzw. PowerShell-Äquivalent
+//  LEAD F P         → fzf --preview 'bat …'
+//  LEAD G F F       → git ls-files | fzf
 //
-// ── ripgrep (rg)
-// ──────────────────────────────────────────────────────────────
-//  LEAD R R         → rg -n --hidden --glob '!.git' ""       (Basis)
-//  LEAD R S         → rg -n -S --hidden --glob '!.git' ""    (smart-case)
-//  LEAD R A         → git ls-files | rg -n --hidden … ""     (nur getrackte)
-//  LEAD R L         → rg -n --hidden … "" | less -R          (scrollbar)
+// ripgrep (rg) & Varianten (OS-neutral / Router wenn nötig)
+//  LEAD R R         → rg -n --hidden --glob '!.git' ""     (Basis)
+//  LEAD R S         → rg -n -S --hidden --glob '!.git' ""  (smart-case)
+//  LEAD R A         → git ls-files | rg -n --hidden … ""   (nur getrackte)
+//  LEAD R L         → rg -n --hidden … "" | less -R        (scrollbar)
+//  LEAD R G R       → rg -n --hidden -g '*.go' ""
+//  LEAD R B         → rg -n --hidden -g '*.rs' ""
+//  LEAD R F         → rg … "" | fzf → ${EDITOR}/nvim +Zeile (OS-Router)
 //
-//  LEAD R G R       → rg -n --hidden -g '*.go' ""            (nur *.go)
-//  LEAD R B         → rg -n --hidden -g '*.rs' ""            (nur *.rs)
-//
-//  LEAD R F         → rg … "" | fzf → ${EDITOR} +Zeile       [POSIX]
-//  LEAD R F W       → rg … "" | fzf → nvim +Zeile            [PowerShell]
-//
-// ── zoxide
-// ────────────────────────────────────────────────────────────────────
-//  LEAD Z Z         → z ""                                   (Cursor in "")
-//  LEAD Z I         → zi                                     (interaktiv/fzf)
+// zoxide
+//  LEAD Z Z         → z ""
+//  LEAD Z I         → zi
 //  LEAD Z A         → zoxide add
-//  LEAD Z L         → zoxide query -l ""                     (Liste; Cursor in
-//  "") LEAD Z T         → zoxide query -t                        (Top-Treffer)
-//  LEAD Z R         → zoxide remove ""                       (Eintrag löschen)
+//  LEAD Z L         → zoxide query -l ""
+//  LEAD Z T         → zoxide query -t
+//  LEAD Z R         → zoxide remove ""
+//  LEAD Z F         → zoxide | fzf → cd (OS-Router)
+//  LEAD Z N         → nvim "$(zoxide query -i)" bzw. PowerShell-Äquivalent
 //
-//  LEAD Z F         → cd "$(zoxide query -l | fzf)"          [POSIX]
-//  LEAD Z F W       → Set-Location (zoxide query -l | fzf)   [PowerShell]
-//  LEAD Z N         → nvim "$(zoxide query -i)"              [POSIX]
-//  LEAD Z N W       → nvim (zoxide query -i)                 [PowerShell]
-//
-// ── yazi (Dateimanager)
-// ───────────────────────────────────────────────────────
+// yazi (TUI Dateimanager)
 //  LEAD Y Y         → yazi
-//  LEAD Y Z         → yazi "$(zoxide query -i)"              [POSIX]
-//  LEAD Y Z W       → yazi (zoxide query -i)                 [PowerShell]
-//  LEAD Y G         → yazi $(git rev-parse --show-toplevel)  [POSIX]
-//  LEAD Y G W       → yazi (git rev-parse --show-toplevel)   [PowerShell]
+//  LEAD Y Z         → yazi "$(zoxide query -i)" (OS-Router möglich)
+//  LEAD Y G         → yazi Git-Root (OS-Router)
+//
 // ──────────────────────────────────────────────────────────────────────────────
 
 #if defined(LEADER_ENABLE)
+
 void leader_start_user(void) {
   // optional: Feedback beim Start (RGB blitzen etc.)
 }
@@ -144,13 +361,61 @@ void leader_start_user(void) {
 void leader_end_user(void) {
 
   // ── Sanity / Test
-  // ───────────────────────────────────────────────────────────
   if (leader_sequence_two_keys(KC_A, KC_A)) {
     send_line("LEADER OK");
   }
 
-  // ── Git ────────────────────────────────────────────────────────────────────
-  // status / add / diff / staged-diff
+  // ── OS wählen / anzeigen ───────────────────────────────────────────────────
+  if (leader_sequence_two_keys(KC_O, KC_W)) {
+    os_set(OS_WIN);
+  } else if (leader_sequence_two_keys(KC_O, KC_L)) {
+    os_set(OS_LNX);
+  } else if (leader_sequence_two_keys(KC_O, KC_M)) {
+    os_set(OS_MAC);
+  } else if (leader_sequence_two_keys(KC_O, KC_C)) {
+    os_cycle();
+  } else if (leader_sequence_two_keys(KC_O, KC_P)) {
+    os_print();
+  }
+
+  // ── WezTerm ────────────────────────────────────────────────────────────────
+  else if (leader_sequence_one_key(KC_T)) {
+    intent_open_wezterm();
+  } else if (leader_sequence_two_keys(KC_P, KC_S)) {
+    intent_split_pane_h();
+  } else if (leader_sequence_two_keys(KC_P, KC_V)) {
+    intent_split_pane_v();
+  } else if (leader_sequence_two_keys(KC_P, KC_X)) {
+    intent_kill_pane();
+  } else if (leader_sequence_two_keys(KC_P, KC_N)) {
+    intent_next_pane_right();
+  } else if (leader_sequence_two_keys(KC_P, KC_P)) {
+    intent_prev_pane_left();
+  } else if (leader_sequence_two_keys(KC_T, KC_N)) {
+    intent_new_tab_here();
+  } else if (leader_sequence_two_keys(KC_T, KC_C)) {
+    intent_close_tab();
+  } else if (leader_sequence_two_keys(KC_T, KC_1)) {
+    intent_activate_tab(0);
+  } else if (leader_sequence_two_keys(KC_T, KC_2)) {
+    intent_activate_tab(1);
+  } else if (leader_sequence_two_keys(KC_T, KC_3)) {
+    intent_activate_tab(2);
+  } else if (leader_sequence_two_keys(KC_T, KC_4)) {
+    intent_activate_tab(3);
+  } else if (leader_sequence_two_keys(KC_T, KC_5)) {
+    intent_activate_tab(4);
+  } else if (leader_sequence_two_keys(KC_T, KC_6)) {
+    intent_activate_tab(5);
+  } else if (leader_sequence_two_keys(KC_T, KC_7)) {
+    intent_activate_tab(6);
+  } else if (leader_sequence_two_keys(KC_T, KC_8)) {
+    intent_activate_tab(7);
+  } else if (leader_sequence_two_keys(KC_T, KC_9)) {
+    intent_activate_tab(8);
+  }
+
+  // ── Git (OS-neutral) ───────────────────────────────────────────────────────
   else if (leader_sequence_two_keys(KC_G, KC_S)) {
     send_line("git status");
   } else if (leader_sequence_two_keys(KC_G, KC_A)) {
@@ -213,63 +478,27 @@ void leader_end_user(void) {
     send_line("git push --tags");
   }
 
-  // ── git grep (Arbeitsbaum) ────────────────────────────────────────────────
+  // ── git grep (OS-Route) ───────────────────────────────────────────────────
   else if (leader_sequence_two_keys(KC_G, KC_G)) {
-    // Basis: nummeriert, keine Binärdateien, Pattern editierbar
     send_cmd_with_empty_quotes("git grep -n -I -e ");
   } else if (leader_sequence_three_keys(KC_G, KC_G, KC_I)) {
-    // ignore-case
     send_cmd_with_empty_quotes("git grep -n -I -i -e ");
   } else if (leader_sequence_three_keys(KC_G, KC_G, KC_W)) {
-    // ganzes Wort
     send_cmd_with_empty_quotes("git grep -n -I -w -e ");
   } else if (leader_sequence_three_keys(KC_G, KC_G, KC_L)) {
-    // nur Dateinamen (-l)
     send_cmd_with_empty_quotes("git grep -I -l -e ");
-  }
-
-  // git grep → fzf → Datei im Editor an Zeile öffnen (POSIX)
-  else if (leader_sequence_three_keys(KC_G, KC_G, KC_F)) {
-    SEND_STRING("git grep -n -I -e \"\" | "
-                "fzf --ansi | "
-                "awk -F: '{print \"+\"$2\" \"$1}' | "
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
-                "xargs -r ${EDITOR:-nvim}\n"
-#else
-                "xargs -r nvim\n"
-#endif
-    );
-    // Cursor zurück in die Such-Quotes
-    tap_code(KC_LEFT);
-  }
-
-  // git grep → fzf → Editor (PowerShell-Variante) — Suffix W
-  else if (leader_sequence_three_keys(KC_G, KC_G, KC_W)) {
-    SEND_STRING("git grep -n -I -e \"\" | fzf | "
-                "ForEach-Object { $p = $_ -split \":\"; "
-                "if ($p.Length -ge 2) { "
-                "  nvim \"+$($p[1])\" $p[0] "
-                "} }\n");
-    tap_code(KC_LEFT);
-  }
-
-  // Optional: Pathspec schnell anhängen (du tippst das Pattern, dann ' -- '
-  // folgt)
-  else if (leader_sequence_three_keys(KC_G, KC_G, KC_P)) {
-    // Beispiel: git grep -n -I -e "" -- src/
+  } else if (leader_sequence_three_keys(KC_G, KC_G, KC_F)) {
+    intent_gitgrep_fzf_open_editor_line();
+  } else if (leader_sequence_three_keys(KC_G, KC_G, KC_P)) {
     SEND_STRING("git grep -n -I -e \"\" -- ");
     tap_code(KC_LEFT);
   }
 
-  // ── „Pickaxe“ (History-Suche) ─────────────────────────────────────────────
-  // Sucht Änderungen, die ein bestimmtes String-/Regex-Vorkommen
-  // ein-/ausführen.
+  // Pickaxe
   else if (leader_sequence_three_keys(KC_G, KC_P, KC_S)) {
-    // -S: exakt nach String in Patches suchen
     send_cmd_with_empty_quotes("git log -S ");
     send_string(" --patch --stat");
   } else if (leader_sequence_three_keys(KC_G, KC_P, KC_G)) {
-    // -G: Regex in Patches
     send_cmd_with_empty_quotes("git log -G ");
     send_string(" --patch --stat");
   }
@@ -278,7 +507,10 @@ void leader_end_user(void) {
   else if (leader_sequence_two_keys(KC_F, KC_F)) {
     send_line("fzf");
   } else if (leader_sequence_two_keys(KC_F, KC_E)) {
-    send_line("fzf | xargs -r $EDITOR");
+    // POSIX: fzf | xargs -r $EDITOR
+    // PowerShell: fzf | ForEach-Object { nvim $_ }
+    send_line_os("fzf | xargs -r ${EDITOR:-nvim}",
+                 "fzf | ForEach-Object { nvim $_ }", NULL);
   } else if (leader_sequence_two_keys(KC_F, KC_P)) {
     send_line(
         "fzf --preview 'bat --style=numbers --color=always {} | head -500'");
@@ -286,54 +518,26 @@ void leader_end_user(void) {
     send_line("git ls-files | fzf");
   }
 
-  // ── ripgrep / suchen ───────────────────────────────────────────────────────
+  // ── ripgrep / suchen (OS-Route wo nötig) ───────────────────────────────────
   else if (leader_sequence_two_keys(KC_R, KC_R)) {
-    // Standard-Suche mit Cursor in Anführungszeichen
-    send_cmd_with_empty_quotes("rg -n --hidden --glob '!.git' ");
+    intent_ripgrep_project();
   } else if (leader_sequence_two_keys(KC_R, KC_S)) {
-    // smart case
     send_cmd_with_empty_quotes("rg -n -S --hidden --glob '!.git' ");
   } else if (leader_sequence_two_keys(KC_R, KC_A)) {
-    // nur getrackte Dateien
     send_cmd_with_empty_quotes("git ls-files | rg -n --hidden --glob '!.git' ");
   } else if (leader_sequence_two_keys(KC_R, KC_L)) {
-    // scrollbare Ausgabe
     SEND_STRING("rg -n --hidden --glob '!.git' \"\" | less -R");
     tap_code(KC_LEFT);
   } else if (leader_sequence_three_keys(KC_R, KC_G, KC_R)) {
-    // Beispiel: nur *.go
     send_cmd_with_empty_quotes("rg -n --hidden --glob '!.git' -g '*.go' ");
   } else if (leader_sequence_two_keys(KC_R, KC_B)) {
-    // Beispiel: nur *.rs
     send_cmd_with_empty_quotes("rg -n --hidden --glob '!.git' -g '*.rs' ");
+  } else if (leader_sequence_two_keys(KC_R, KC_F)) {
+    intent_rg_fzf_open_editor_line();
   }
 
-  // rg → fzf → nvim (+ Zeile), POSIX
-  else if (leader_sequence_two_keys(KC_R, KC_F)) {
-    SEND_STRING("rg --line-number --no-heading --color=always -S \"\" | "
-                "fzf --ansi | "
-                "awk -F: '{print \"+\"$2\" \"$1}' | "
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
-                "xargs -r ${EDITOR:-nvim}\n"
-#else
-                "xargs -r nvim\n"
-#endif
-    );
-    // Cursor zurück in die rg-Query („“)
-    tap_code(KC_LEFT);
-  }
-
-  // rg → fzf → nvim (+ Zeile), PowerShell
-  else if (leader_sequence_three_keys(KC_R, KC_F, KC_W)) {
-    SEND_STRING("rg --line-number --no-heading -S \"\" | fzf | "
-                "ForEach-Object { $p = $_ -split \":\"; "
-                "if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }\n");
-    tap_code(KC_LEFT);
-  }
-
-  // ── zoxide ────────────────────────────────────────────────────────────────
+  // ── zoxide (OS-Route) ─────────────────────────────────────────────────────
   else if (leader_sequence_two_keys(KC_Z, KC_Z)) {
-    // z "<query>"
     send_cmd_with_empty_quotes("z ");
   } else if (leader_sequence_two_keys(KC_Z, KC_I)) {
     send_line("zi");
@@ -345,44 +549,25 @@ void leader_end_user(void) {
     send_line("zoxide query -t");
   } else if (leader_sequence_two_keys(KC_Z, KC_R)) {
     send_cmd_with_empty_quotes("zoxide remove ");
+  } else if (leader_sequence_two_keys(KC_Z, KC_F)) {
+    intent_zoxide_fzf_cd();
+  } else if (leader_sequence_two_keys(KC_Z, KC_N)) {
+    send_line_os("nvim \"$(zoxide query -i)\"", "nvim (zoxide query -i)", NULL);
   }
 
-  // zoxide + fzf: POSIX
-  else if (leader_sequence_two_keys(KC_Z, KC_F)) {
-    send_line("cd \"$(zoxide query -l | fzf)\"");
-  }
-  // zoxide + fzf: PowerShell (Suffix W)
-  else if (leader_sequence_three_keys(KC_Z, KC_F, KC_W)) {
-    send_line("Set-Location (zoxide query -l | fzf)");
-  }
-  // zoxide → nvim: POSIX / PowerShell
-  else if (leader_sequence_two_keys(KC_Z, KC_N)) {
-    send_line("nvim \"$(zoxide query -i)\"");
-  } else if (leader_sequence_three_keys(KC_Z, KC_N, KC_W)) {
-    send_line("nvim (zoxide query -i)");
-  }
-
-  // ── yazi (TUI Dateimanager) ───────────────────────────────────────────────
+  // ── yazi (OS-Route) ───────────────────────────────────────────────────────
   else if (leader_sequence_two_keys(KC_Y, KC_Y)) {
-    // Direkt starten im aktuellen Verzeichnis
     send_line("yazi");
   } else if (leader_sequence_two_keys(KC_Y, KC_Z)) {
-    // Ziel interaktiv via zoxide (POSIX)
-    send_line("yazi \"$(zoxide query -i)\"");
-  } else if (leader_sequence_three_keys(KC_Y, KC_Z, KC_W)) {
-    // Ziel via zoxide (PowerShell)
-    send_line("yazi (zoxide query -i)");
+    send_line_os("yazi \"$(zoxide query -i)\"", "yazi (zoxide query -i)", NULL);
   } else if (leader_sequence_two_keys(KC_Y, KC_G)) {
-    // Im Git-Root starten (POSIX)
-    send_line("yazi \"$(git rev-parse --show-toplevel)\"");
-  } else if (leader_sequence_three_keys(KC_Y, KC_G, KC_W)) {
-    // Im Git-Root starten (PowerShell)
-    send_line("yazi (git rev-parse --show-toplevel)");
+    intent_yazi_git_root();
   } else if (leader_sequence_two_keys(KC_Y, KC_F)) {
-    // Datei via fzf wählen und yazi dort öffnen (POSIX)
-    send_line("yazi \"$(git ls-files 2>/dev/null || rg --files)\""); // fallback
+    // Datei-/Pfadliste; je nach yazi-Version springt es ins Verzeichnis
+    send_line_os(
+        "yazi \"$(git ls-files 2>/dev/null || rg --files)\"",
+        "yazi (git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files })",
+        NULL);
   }
-  // Hinweis: yazi akzeptiert Datei- oder Ordnerpfad; bei Datei springt es
-  // typischerweise ins Elternverzeichnis und selektiert sie (je nach Version).
 }
 #endif /* LEADER_ENABLE */
