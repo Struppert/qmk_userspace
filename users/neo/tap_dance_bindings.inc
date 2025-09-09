@@ -1,7 +1,7 @@
 // tap_dance_bindings.inc  (vom board-spezifischen keymap.c inkludieren)
 #ifdef TAP_DANCE_ENABLE
   #include "process_tap_dance.h"
-  #include "tap_dance_ids.h" 
+  #include "tap_dance_ids.h"
 
   // Vorwärtsdeklarationen der Callback-Funktionen (implementiert in keymap_logic.c)
   void td_test_finished(tap_dance_state_t *s, void *ud);
