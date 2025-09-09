@@ -1,7 +1,7 @@
 // users/neo/config.h
 #pragma once
 
-// VIA: wir nutzen 8 Layer (0..7)
+// VIA: wir nutzen 12 Layer (0..11)
 #ifdef DYNAMIC_KEYMAP_LAYER_COUNT
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
 #endif
