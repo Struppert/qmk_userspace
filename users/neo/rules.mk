@@ -24,3 +24,4 @@ SRC += leader.c
 SRC += os_state.c
 SRC += keymap_logic.c
 SRC += userspace-init.c 
+SRC += tap_dance_impl.c
