@@ -49,6 +49,33 @@ static inline void send_cmd_with_empty_quotes(const char *prefix) {
 }
 static inline void send_line(const char *s) { send_and_enter(s); }
 
+// ── Hilfe-Block API: Begin/Line/End druckt als EIN Kommando ────────────────
+static inline void help_block_begin(void) {
+  if (is_win()) {
+    // PowerShell: single-quoted here-string (keine Expansion)
+    SEND_STRING("$LEAD_HELP = @'\n");
+  } else {
+    // POSIX: Here-Doc zu cat → ein einziger Befehl
+    SEND_STRING("cat <<'LEADHELP'\n");
+  }
+}
+static inline void help_block_line(const char *s) {
+  send_string(s);
+  send_string("\n");
+}
+static inline void help_block_end(void) {
+  if (is_win()) {
+    SEND_STRING("'@\nWrite-Host $LEAD_HELP\n");
+  } else {
+    SEND_STRING("LEADHELP\n");
+  }
+}
+
+// Komfort: Kopf/Trenner in Blockform
+static inline void help_block_hr(void) {
+  help_block_line("────────────────────────────────────────");
+}
+
 // Router: wähle je OS richtigen Befehl (mac fällt auf POSIX zurück, wenn nicht
 // // gesetzt)
 static inline void send_line_os(const char *posix_cmd, const char *pwsh_cmd,
@@ -75,161 +102,163 @@ static inline void send_line_os(const char *posix_cmd, const char *pwsh_cmd,
 static inline void help_hr(void) {
   send_line("────────────────────────────────────────");
 }
-static inline void help_head(const char *title) {
-  help_hr();
+static inline void help_block_head(const char *title) {
+  help_block_hr();
   send_line(title);
-  help_hr();
+  help_block_hr();
 }
-static inline void help_line(const char *s) { send_line(s); }
 
 // Gruppen-Hilfetexte
 static inline void help_groups_overview(void) {
-  help_head("#Leader Hilfe – Gruppenübersicht");
-  help_line("#LEAD O H   → OS wählen/anzeigen (Windows/Linux/macOS)");
-  help_line("#LEAD T H   → Tabs (WezTerm)");
-  help_line("#LEAD P H   → Panes (WezTerm)");
-  help_line("#LEAD G H   → Git "
-            "(Status/Diff/Commit/Push/Log/Branch/Rebase/Tags/Grep)");
-  help_line("#LEAD F H   → fzf");
-  help_line("#LEAD R H   → ripgrep (rg) & Varianten");
-  help_line("#LEAD Z H   → zoxide");
-  help_line("#LEAD Y H   → yazi (Dateimanager)");
-  help_line("#LEAD J H   → zellij (Terminal-Multiplexer)");
-  help_hr();
-  help_line("#Allgemein/Test: LEAD A A → \"LEADER OK\"");
-  help_line(
+  help_block_head("#Leader Hilfe – Gruppenübersicht");
+  help_block_line("#LEAD O H   → OS wählen/anzeigen (Windows/Linux/macOS)");
+  help_block_line("#LEAD T H   → Tabs (WezTerm)");
+  help_block_line("#LEAD P H   → Panes (WezTerm)");
+  help_block_line("#LEAD G H   → Git "
+                  "(Status/Diff/Commit/Push/Log/Branch/Rebase/Tags/Grep)");
+  help_block_line("#LEAD F H   → fzf");
+  help_block_line("#LEAD R H   → ripgrep (rg) & Varianten");
+  help_block_line("#LEAD Z H   → zoxide");
+  help_block_line("#LEAD Y H   → yazi (Dateimanager)");
+  help_block_line("#LEAD J H   → zellij (Terminal-Multiplexer)");
+  help_block_hr();
+  help_block_line("#Allgemein/Test: LEAD A A → \"LEADER OK\"");
+  help_block_line(
       "#Hinweis: Befehle mit \"\" setzen den Cursor zwischen die Quotes.");
 }
 
 static inline void help_os(void) {
-  help_head("#Hilfe: OS wählen / anzeigen (LEAD O …)");
-  help_line("#O W → OS = Windows");
-  help_line("#O L → OS = Linux");
-  help_line("#O M → OS = macOS");
-  help_line("#O C → OS zyklisch wechseln (Win→Linux→mac→…)");
-  help_line("#O P → aktuellen OS-Modus in die aktive App tippen");
+  help_block_head("#Hilfe: OS wählen / anzeigen (LEAD O …)");
+  help_block_line("#O W → OS = Windows");
+  help_block_line("#O L → OS = Linux");
+  help_block_line("#O M → OS = macOS");
+  help_block_line("#O C → OS zyklisch wechseln (Win→Linux→mac→…)");
+  help_block_line("#O P → aktuellen OS-Modus in die aktive App tippen");
 }
 
 static inline void help_tabs(void) {
-  help_head("#Hilfe: WezTerm Tabs (LEAD T …)");
-  help_line("#T     → WezTerm öffnen");
-  help_line("#T N   → Neuer Tab im aktuellen Pfad");
-  help_line("#T C   → Tab schließen");
-  help_line("#T 1..9→ Tab 1..9 aktivieren");
+  help_block_head("#Hilfe: WezTerm Tabs (LEAD T …)");
+  help_block_line("#T     → WezTerm öffnen");
+  help_block_line("#T N   → Neuer Tab im aktuellen Pfad");
+  help_block_line("#T C   → Tab schließen");
+  help_block_line("#T 1..9→ Tab 1..9 aktivieren");
 }
 
 static inline void help_panes(void) {
-  help_head("#Hilfe: WezTerm Panes (LEAD P …)");
-  help_line("#P S   → Split horizontal (nebeneinander)");
-  help_line("#P V   → Split vertikal (untereinander)");
-  help_line("#P X   → Aktuelles Pane schließen");
-  help_line("#P N   → Nächstes Pane (rechts) aktivieren");
-  help_line("#P P   → Vorheriges Pane (links) aktivieren");
+  help_block_head("#Hilfe: WezTerm Panes (LEAD P …)");
+  help_block_line("#P S   → Split horizontal (nebeneinander)");
+  help_block_line("#P V   → Split vertikal (untereinander)");
+  help_block_line("#P X   → Aktuelles Pane schließen");
+  help_block_line("#P N   → Nächstes Pane (rechts) aktivieren");
+  help_block_line("#P P   → Vorheriges Pane (links) aktivieren");
 }
 
 static inline void help_git(void) {
-  help_head("#Hilfe: Git (LEAD G …)");
-  help_line("#G S       → git status");
-  help_line("#G A       → git add -A");
-  help_line("#G D       → git diff");
-  help_line("#G D S     → git diff --staged");
-  help_line("#G C       → git commit -m \"…\"");
-  help_line("#G C F/B/R/T/D → fix/feat/refactor/test/docs:");
-  help_line("#G P       → git push");
-  help_line("#G P 1     → push + set-upstream origin HEAD");
-  help_line("#G P 9     → push --tags");
-  help_line("#G P !     → push --force-with-lease");
-  help_line("#G L       → log kompakt (30)");
-  help_line("#G L A     → log all graph");
-  help_line("#G B N/S/D → branch neu / zurück / löschen");
-  help_line("#G R       → rebase -i HEAD~");
-  help_line("#G T N/P   → tag -a v… / push --tags");
-  help_line("#G G       → git grep -n -I -e \"…\"");
-  help_line("#G G I/W/L → grep (ignore-case / wort / nur dateien)");
-  help_line("#G G F     → grep | fzf | nvim +Zeile");
-  help_line("#G P S/G   → pickaxe -S/-G … --patch --stat");
+  help_block_head("#Hilfe: Git (LEAD G …)");
+  help_block_line("#G S       → git status");
+  help_block_line("#G A       → git add -A");
+  help_block_line("#G D       → git diff");
+  help_block_line("#G D S     → git diff --staged");
+  help_block_line("#G C       → git commit -m \"…\"");
+  help_block_line("#G C F/B/R/T/D → fix/feat/refactor/test/docs:");
+  help_block_line("#G P       → git push");
+  help_block_line("#G P 1     → push + set-upstream origin HEAD");
+  help_block_line("#G P 9     → push --tags");
+  help_block_line("#G P !     → push --force-with-lease");
+  help_block_line("#G L       → log kompakt (30)");
+  help_block_line("#G L A     → log all graph");
+  help_block_line("#G B N/S/D → branch neu / zurück / löschen");
+  help_block_line("#G R       → rebase -i HEAD~");
+  help_block_line("#G T N/P   → tag -a v… / push --tags");
+  help_block_line("#G G       → git grep -n -I -e \"…\"");
+  help_block_line("#G G I/W/L → grep (ignore-case / wort / nur dateien)");
+  help_block_line("#G G F     → grep | fzf | nvim +Zeile");
+  help_block_line("#G P S/G   → pickaxe -S/-G … --patch --stat");
 }
 
 static inline void help_fzf(void) {
-  help_head("#Hilfe: fzf (LEAD F …)");
-  help_line("#F F     → fzf");
-  help_line("#F E     → Auswahl → $EDITOR / nvim");
-  help_line("#F P     → Preview mit bat");
-  help_line("#G F F   → git ls-files | fzf");
-  help_line("#— Dateien —");
-  help_line("#F O     → Dateien mit Preview (Enter öffnet in $EDITOR)");
-  help_line("#F M     → Multi-Select → $EDITOR <file1…>");
-  help_line("#— Verzeichnisse —");
-  help_line("#F D     → Verzeichnis wählen → cd (fd/find Fallback)");
+  help_block_head("#Hilfe: fzf (LEAD F …)");
+  help_block_line("#F F     → fzf");
+  help_block_line("#F E     → Auswahl → $EDITOR / nvim");
+  help_block_line("#F P     → Preview mit bat");
+  help_block_line("#G F F   → git ls-files | fzf");
+  help_block_line("#— Dateien —");
+  help_block_line("#F O     → Dateien mit Preview (Enter öffnet in $EDITOR)");
+  help_block_line("#F M     → Multi-Select → $EDITOR <file1…>");
+  help_block_line("#— Verzeichnisse —");
+  help_block_line("#F D     → Verzeichnis wählen → cd (fd/find Fallback)");
 }
 
 static inline void help_rg(void) {
-  help_head("#Hilfe: ripgrep (LEAD R …)");
-  help_line("#R R     → Basis: rg -n --hidden --glob '!.git' \"…\"");
-  help_line("#R S     → smart: -S");
-  help_line("#R W     → wortgrenze: -w");
-  help_line("#R I     → ignore-case: -i");
-  help_line("#R L     → Liste mit less -R");
-  help_line("#R F     → rg … | fzf | nvim +Zeile (Preview)");
-  help_line("#— Kontext —");
-  help_line("#R C A   → -C 3   (3 Zeilen Kontext um Treffer)");
-  help_line("#R C U   → -B 3   (3 Zeilen davor)");
-  help_line("#R C D   → -A 3   (3 Zeilen danach)");
-  help_line("#— Multiline/Regex —");
-  help_line("#R M     → -U     (multiline / ungeschützte Dateien)");
-  help_line("#— Sprachen/Dateitypen —");
-  help_line("#R T C   → C/C++: -t c -t cpp -t h -t hpp");
-  help_line("#R T R   → Rust:  -t rust");
-  help_line("#R T G   → Go:    -t go");
+  help_block_head("#Hilfe: ripgrep (LEAD R …)");
+  help_block_line("#R R     → Basis: rg -n --hidden --glob '!.git' \"…\"");
+  help_block_line("#R S     → smart: -S");
+  help_block_line("#R W     → wortgrenze: -w");
+  help_block_line("#R I     → ignore-case: -i");
+  help_block_line("#R L     → Liste mit less -R");
+  help_block_line("#R F     → rg … | fzf | nvim +Zeile (Preview)");
+  help_block_line("#— Kontext —");
+  help_block_line("#R C A   → -C 3   (3 Zeilen Kontext um Treffer)");
+  help_block_line("#R C U   → -B 3   (3 Zeilen davor)");
+  help_block_line("#R C D   → -A 3   (3 Zeilen danach)");
+  help_block_line("#— Multiline/Regex —");
+  help_block_line("#R M     → -U     (multiline / ungeschützte Dateien)");
+  help_block_line("#— Sprachen/Dateitypen —");
+  help_block_line("#R T C   → C/C++: -t c -t cpp -t h -t hpp");
+  help_block_line("#R T R   → Rust:  -t rust");
+  help_block_line("#R T G   → Go:    -t go");
 }
 
 static inline void help_zoxide(void) {
-  help_head("#Hilfe: zoxide (LEAD Z …)");
-  help_line("#Z Z   → z \"…\"");
-  help_line("#Z I   → zi");
-  help_line("#Z A   → zoxide add");
-  help_line("#Z L   → zoxide query -l \"…\"");
-  help_line("#Z T   → zoxide query -t");
-  help_line("#Z R   → zoxide remove \"…\"");
-  help_line("#Z F   → zoxide | fzf → cd (OS-Route)");
-  help_line("#Z N   → nvim $(zoxide query -i)");
+  help_block_head("#Hilfe: zoxide (LEAD Z …)");
+  help_block_line("#Z Z   → z \"…\"");
+  help_block_line("#Z I   → zi");
+  help_block_line("#Z A   → zoxide add");
+  help_block_line("#Z L   → zoxide query -l \"…\"");
+  help_block_line("#Z T   → zoxide query -t");
+  help_block_line("#Z R   → zoxide remove \"…\"");
+  help_block_line("#Z F   → zoxide | fzf → cd (OS-Route)");
+  help_block_line("#Z N   → nvim $(zoxide query -i)");
 }
 
 static inline void help_yazi(void) {
-  help_head("#Hilfe: yazi (LEAD Y …)");
-  help_line("#Y Y   → yazi");
-  help_line("#Y Z   → yazi \"$(zoxide query -i)\" (OS-Route möglich)");
-  help_line("#Y G   → yazi Git-Root");
-  help_line("#Y F   → yazi mit Datei-/Pfadliste");
+  help_block_head("#Hilfe: yazi (LEAD Y …)");
+  help_block_line("#Y Y   → yazi");
+  help_block_line("#Y Z   → yazi \"$(zoxide query -i)\" (OS-Route möglich)");
+  help_block_line("#Y G   → yazi Git-Root");
+  help_block_line("#Y F   → yazi mit Datei-/Pfadliste");
 }
 
 // ───── 2: Zellij-Hilfe ─────
 static inline void help_zellij(void) {
-  help_head("#Hilfe: zellij (LEAD J …)");
-  help_line("#J J       → attach -c main (Hauptsession starten/beitreten)");
-  help_line("#J L       → list-sessions");
-  help_line("#J A       → attach <name>");
-  help_line("#J K       → kill-session <name> (Name tippen)");
-  help_line("#J S R     → rename-session <name> (Name tippen)");
-  help_line("#— Tabs —");
-  help_line("#J T N     → new-tab");
-  help_line("#J T P     → go-to-previous-tab");
-  help_line("#J T X     → close-tab");
-  help_line("#J T G 1..9→ go-to-tab 1..9");
-  help_line("#J T R     → rename-tab <name>");
-  help_line("#J T L     → new-tab --layout <file> --name <name>");
-  help_line("#— Panes —");
-  help_line("#J P H     → new-pane -d right   (Vertikal teilen)");
-  help_line("#J P V     → new-pane -d down    (Horizontal teilen)");
-  help_line("#J P F     → new-pane -f         (Floating Pane)");
-  help_line("#J P X     → close-pane");
-  help_line("#J F H/L/K/J → move-focus left/right/up/down");
-  help_line("#J R H/L/K/J → resize left/right/up/down (kleine Schritte)");
-  help_line("#— Floating / Frames / Fullscreen —");
-  help_line("#J O F     → toggle-floating-panes   (alle zeigen/verstecken)");
-  help_line("#J O E     → toggle-pane-embed-or-floating (einzelnes Pane)");
-  help_line("#J O U     → toggle-fullscreen");
-  help_line("#J O B     → toggle-pane-frames");
+  help_block_head("#Hilfe: zellij (LEAD J …)");
+  help_block_line(
+      "#J J       → attach -c main (Hauptsession starten/beitreten)");
+  help_block_line("#J L       → list-sessions");
+  help_block_line("#J A       → attach <name>");
+  help_block_line("#J K       → kill-session <name> (Name tippen)");
+  help_block_line("#J S R     → rename-session <name> (Name tippen)");
+  help_block_line("#— Tabs —");
+  help_block_line("#J T N     → new-tab");
+  help_block_line("#J T P     → go-to-previous-tab");
+  help_block_line("#J T X     → close-tab");
+  help_block_line("#J T G 1..9→ go-to-tab 1..9");
+  help_block_line("#J T R     → rename-tab <name>");
+  help_block_line("#J T L     → new-tab --layout <file> --name <name>");
+  help_block_line("#— Panes —");
+  help_block_line("#J P H     → new-pane -d right   (Vertikal teilen)");
+  help_block_line("#J P V     → new-pane -d down    (Horizontal teilen)");
+  help_block_line("#J P F     → new-pane -f         (Floating Pane)");
+  help_block_line("#J P X     → close-pane");
+  help_block_line("#J F H/L/K/J → move-focus left/right/up/down");
+  help_block_line("#J R H/L/K/J → resize left/right/up/down (kleine Schritte)");
+  help_block_line("#— Floating / Frames / Fullscreen —");
+  help_block_line(
+      "#J O F     → toggle-floating-panes   (alle zeigen/verstecken)");
+  help_block_line(
+      "#J O E     → toggle-pane-embed-or-floating (einzelnes Pane)");
+  help_block_line("#J O U     → toggle-fullscreen");
+  help_block_line("#J O B     → toggle-pane-frames");
 }
 
 // zellij Intents (OS-spezifisch)
