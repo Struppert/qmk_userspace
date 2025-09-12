@@ -5,6 +5,8 @@
 // Neu:
 //  • LEAD H H → Gruppenübersicht / Cheat-Sheet Kopf
 //  • LEAD O H / T H / P H / G H / R H / Z H / Y H / F H → Hilfe pro Gruppe
+//  • Shell-Dispatcher: alle Kommandos laufen über die aktuell gewählte Shell
+//    (bash / fish / zsh / PowerShell). send_line(...) nutzt den Dispatcher.
 // ──────────────────────────────────────────────────────────────────────────────
 
 #include QMK_KEYBOARD_H
@@ -13,41 +15,110 @@
 #include "process_leader.h"
 #endif
 
-#include "os_state.h" // stellt os_current(), os_set(), os_cycle(), os_print() bereit
+#include "os_state.h" // stellt os_current(), os_set(), os_cycle(), os_print(), shell_current(), shell_set() bereit
+
+// C-Std
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 
 // ──────────────────────────────────────────────────────────────────────────────
-// SendString → korrekt für DE-Layout (nur hier einbinden, sonst Linker-Fehler!)
 #define SENDSTRING_LANGUAGE de_DE
-#include "sendstring_german.h"
+#include "sendstring_german.h" // SendString → korrekt für DE-Layout
 
 // ──────────────────────────────────────────────────────────────────────────────
 // OS Helpers (Router)
-static inline bool is_win(void) { return os_current() == OS_WIN; }
+static inline bool is_win(void)   { return os_current() == OS_WIN; }
 static inline bool is_linux(void) { return os_current() == OS_LNX; }
-static inline bool is_mac(void) { return os_current() == OS_MAC; }
+static inline bool is_mac(void)   { return os_current() == OS_MAC; }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Kleine Helfer
-static inline void send_and_enter(const char *s) {
-  send_string(s);
-  tap_code(KC_ENT);
+// Shell-Dispatcher für Leader-Kommandos
+//   Aufruf intern über send_line(...), optional direkt shell_run_cmd(...)
+
+/// Optional: Auf PowerShell 7 (pwsh) wechseln, falls installiert
+/// #define SHELL_DISPATCH_USE_PWSH7
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PowerShell: '…' → ''…'' escapen (für -Command ' & { … } ')
+static void ps_escape_and_send(const char *s) {
+  char buf[256];
+  size_t j = 0;
+  for (const char *p = s; *p && j + 2 < sizeof(buf); ++p) {
+    if (*p == '\'') { buf[j++] = '\''; buf[j++] = '\''; }
+    else            { buf[j++] = *p; }
+  }
+  buf[j] = '\0';
+  send_string(buf);
 }
-static inline void move_left(uint8_t n) {
-  while (n--)
-    tap_code(KC_LEFT);
+
+// Einzeiler ausführen
+//  - Windows (SH_PWSH): eigener Spawn (powershell/pwsh -Command …)
+//  - Linux/macOS (bash/fish/zsh): direkt in die aktive Shell tippen (kein Spawn)
+static void shell_run_cmd(const char *cmd) {
+  if (shell_current() == SH_PWSH) {
+    #ifdef SHELL_DISPATCH_USE_PWSH7
+    SEND_STRING("pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ' & { ");
+    #else
+    SEND_STRING("powershell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ' & { ");
+    #endif
+    ps_escape_and_send(cmd);
+    SEND_STRING(" } '" SS_TAP(X_ENTER));
+  } else {
+    send_string(cmd);
+    tap_code(KC_ENTER);
+  }
 }
+
+/*
+// Mehrzeiler ausführen
+//  - Windows (SH_PWSH): als ein Block im -Command  (Statements per '; ')
+//  - Linux/macOS: einfach hintereinander in die aktive Shell tippen
+static void shell_run_lines(const char *lines[], size_t n) {
+  if (!lines || n == 0) return;
+
+  if (shell_current() == SH_PWSH) {
+    #ifdef SHELL_DISPATCH_USE_PWSH7
+    SEND_STRING("pwsh -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ' & { ");
+    #else
+    SEND_STRING("powershell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ' & { ");
+    #endif
+    for (size_t i = 0; i < n; ++i) {
+      ps_escape_and_send(lines[i]);
+      if (i + 1 < n) SEND_STRING("; ");
+    }
+    SEND_STRING(" } '" SS_TAP(X_ENTER));
+  } else {
+    for (size_t i = 0; i < n; ++i) {
+      send_string(lines[i]);
+      tap_code(KC_ENTER);
+    }
+  }
+}
+*/
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Kleine Helfer (nun mit Shell-Dispatcher)
+
+static inline void move_left(uint8_t n) { while (n--) tap_code(KC_LEFT); }
+
 static inline void type_quotes_and_place_cursor(void) {
   // tippt "" und setzt Cursor dazwischen
   send_string("\"\"");
   tap_code(KC_LEFT);
 }
+
+// z.B. prefix="rg -n --hidden --glob '!.git' " → tippt prefix + "" und setzt Cursor
 static inline void send_cmd_with_empty_quotes(const char *prefix) {
-  // z.B. prefix="rg -n --hidden --glob '!.git' " → tippt prefix + "" und setzt
-  // Cursor
   send_string(prefix);
   type_quotes_and_place_cursor();
 }
-static inline void send_line(const char *s) { send_and_enter(s); }
+
+// Einzeiler über aktuelle Shell ausführen
+static inline void send_line(const char *s) {
+  shell_run_cmd(s);
+}
 
 // ── Hilfe-Block API: Begin/Line/End druckt als EIN Kommando ────────────────
 static inline void help_block_begin(void) {
@@ -72,36 +143,22 @@ static inline void help_block_end(void) {
 }
 
 // Komfort: Kopf/Trenner in Blockform
-static inline void help_block_hr(void) {
-  help_block_line("────────────────────────────────────────");
-}
+static inline void help_block_hr(void) { help_block_line("────────────────────────────────────────"); }
 
-// Router: wähle je OS richtigen Befehl (mac fällt auf POSIX zurück, wenn nicht
-// // gesetzt)
-static inline void send_line_os(const char *posix_cmd, const char *pwsh_cmd,
-                                const char *mac_cmd_opt) {
+// Router: wähle je OS richtigen Befehl (mac fällt auf POSIX zurück, wenn nicht gesetzt)
+// → führt das gewählte Kommando über die aktuelle Shell aus
+static inline void send_line_os(const char *posix_cmd, const char *pwsh_cmd, const char *mac_cmd_opt) {
+  const char *cmd = posix_cmd;
   if (is_win()) {
-    if (pwsh_cmd) {
-      send_line(pwsh_cmd);
-      return;
-    }
-    // Fallback: POSIX-Variante (nicht ideal, aber besser als NOP)
-    send_line(posix_cmd);
-  } else if (is_mac()) {
-    if (mac_cmd_opt && *mac_cmd_opt) {
-      send_line(mac_cmd_opt);
-      return;
-    }
-    send_line(posix_cmd);
-  } else {
-    send_line(posix_cmd);
+    cmd = pwsh_cmd ? pwsh_cmd : posix_cmd;
+  } else if (is_mac() && mac_cmd_opt && *mac_cmd_opt) {
+    cmd = mac_cmd_opt;
   }
+  shell_run_cmd(cmd);
 }
 
 // ——— Hilfe-Ausgabe (nur Text; nichts wird ausgeführt) ————————————————
-static inline void help_hr(void) {
-  send_line("────────────────────────────────────────");
-}
+static inline void help_hr(void) { send_line("────────────────────────────────────────"); }
 static inline void help_block_head(const char *title) {
   help_block_hr();
   send_line(title);
@@ -114,8 +171,7 @@ static inline void help_groups_overview(void) {
   help_block_line("#LEAD O H   → OS wählen/anzeigen (Windows/Linux/macOS)");
   help_block_line("#LEAD T H   → Tabs (WezTerm)");
   help_block_line("#LEAD P H   → Panes (WezTerm)");
-  help_block_line("#LEAD G H   → Git "
-                  "(Status/Diff/Commit/Push/Log/Branch/Rebase/Tags/Grep)");
+  help_block_line("#LEAD G H   → Git (Status/Diff/Commit/Push/Log/Branch/Rebase/Tags/Grep)");
   help_block_line("#LEAD F H   → fzf");
   help_block_line("#LEAD R H   → ripgrep (rg) & Varianten");
   help_block_line("#LEAD Z H   → zoxide");
@@ -123,8 +179,7 @@ static inline void help_groups_overview(void) {
   help_block_line("#LEAD J H   → zellij (Terminal-Multiplexer)");
   help_block_hr();
   help_block_line("#Allgemein/Test: LEAD A A → \"LEADER OK\"");
-  help_block_line(
-      "#Hinweis: Befehle mit \"\" setzen den Cursor zwischen die Quotes.");
+  help_block_line("#Hinweis: Befehle mit \"\" setzen den Cursor zwischen die Quotes.");
 }
 
 static inline void help_os(void) {
@@ -232,8 +287,7 @@ static inline void help_yazi(void) {
 // ───── 2: Zellij-Hilfe ─────
 static inline void help_zellij(void) {
   help_block_head("#Hilfe: zellij (LEAD J …)");
-  help_block_line(
-      "#J J       → attach -c main (Hauptsession starten/beitreten)");
+  help_block_line("#J J       → attach -c main (Hauptsession starten/beitreten)");
   help_block_line("#J L       → list-sessions");
   help_block_line("#J A       → attach <name>");
   help_block_line("#J K       → kill-session <name> (Name tippen)");
@@ -253,96 +307,94 @@ static inline void help_zellij(void) {
   help_block_line("#J F H/L/K/J → move-focus left/right/up/down");
   help_block_line("#J R H/L/K/J → resize left/right/up/down (kleine Schritte)");
   help_block_line("#— Floating / Frames / Fullscreen —");
-  help_block_line(
-      "#J O F     → toggle-floating-panes   (alle zeigen/verstecken)");
-  help_block_line(
-      "#J O E     → toggle-pane-embed-or-floating (einzelnes Pane)");
+  help_block_line("#J O F     → toggle-floating-panes   (alle zeigen/verstecken)");
+  help_block_line("#J O E     → toggle-pane-embed-or-floating (einzelnes Pane)");
   help_block_line("#J O U     → toggle-fullscreen");
   help_block_line("#J O B     → toggle-pane-frames");
 }
 
-// zellij Intents (OS-spezifisch)
-// Sessions / Attach
-static inline void intent_zellij_attach_main(void) {
-  send_line("zellij attach -c main");
+// ── Shell-Namen (kurz & lang) ────────────────────────────────────────────────
+static inline const char* shell_name_short(shell_t sh) {
+  switch (sh) {
+    case SH_FISH: return "fish";
+    case SH_ZSH:  return "zsh";
+    case SH_PWSH: return "pwsh";
+    default:      return "bash";
+  }
 }
-static inline void intent_zellij_list_sessions(void) {
-  send_line("zellij list-sessions");
-}
-static inline void intent_zellij_attach_prompt(void) {
-  SEND_STRING("zellij attach ");
-} // Name tippen + ENTER
-static inline void intent_zellij_kill_session_prompt(void) {
-  SEND_STRING("zellij kill-session ");
-}
-static inline void intent_zellij_rename_session_prompt(void) {
-  SEND_STRING("zellij action rename-session ");
+static inline const char* shell_name_long(shell_t sh) {
+  switch (sh) {
+    case SH_FISH: return "fish (friendly interactive shell)";
+    case SH_ZSH:  return "zsh (Z shell)";
+    case SH_PWSH: return "PowerShell";
+    default:      return "bash (Bourne Again SH)";
+  }
 }
 
-// Tabs
-static inline void intent_zellij_new_tab(void) {
-  send_line("zellij action new-tab");
+// ── Aktuelle Shell in aktive App tippen (wie LEAD O P) ───────────────────────
+static void shell_print_to_app(void) {
+  send_string(shell_name_short(shell_current()));
+  SEND_STRING(SS_TAP(X_ENTER));
 }
-static inline void intent_zellij_prev_tab(void) {
-  send_line("zellij action go-to-previous-tab");
-}
-static inline void intent_zellij_close_tab(void) {
-  send_line("zellij action close-tab");
-}
-static inline void intent_zellij_go_to_tab(uint8_t n) {
-  char buf[32];
-  snprintf(buf, sizeof(buf), "zellij action go-to-tab %u", (unsigned)n);
-  send_line(buf);
-}
-static inline void intent_zellij_rename_tab_prompt(void) {
-  SEND_STRING("zellij action rename-tab ");
-}
-static inline void intent_zellij_new_tab_layout_prompt(void) {
-  // Beispiel: new-tab --layout ~/.config/zellij/layouts/dev.kdl --name dev
+
+// ── Shell-Befehle: zentrale Hilfeausgabe (LEAD S H) ──────────────────────────
+static void leader_help_shell_group(void) {
   SEND_STRING(
-      "zellij action new-tab --layout "); // dann Pfad + optional: " --name "
+    "Leader S (Shell)\n"
+    "  S B  → Shell=bash\n"
+    "  S F  → Shell=fish\n"
+    "  S Z  → Shell=zsh\n"
+    "  S W  → Shell=pwsh (PowerShell)\n"
+    "  S C  → Shell zyklisch (bash→fish→zsh→pwsh→...)\n"
+    "  S P  → aktuelle Shell in App tippen\n"
+    "  S H  → diese Hilfe\n"
+  );
+  SEND_STRING("  Aktuell: ");
+  send_string(shell_name_long(shell_current()));
+  SEND_STRING(SS_TAP(X_ENTER));
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// zellij Intents (OS-spezifisch)
+// Sessions / Attach
+static inline void intent_zellij_attach_main(void)        { send_line("zellij attach -c main"); }
+static inline void intent_zellij_list_sessions(void)      { send_line("zellij list-sessions"); }
+static inline void intent_zellij_attach_prompt(void)      { SEND_STRING("zellij attach "); } // Name tippen + ENTER
+static inline void intent_zellij_kill_session_prompt(void){ SEND_STRING("zellij kill-session "); }
+static inline void intent_zellij_rename_session_prompt(void){ SEND_STRING("zellij action rename-session "); }
+
+// Tabs
+static inline void intent_zellij_new_tab(void)            { send_line("zellij action new-tab"); }
+static inline void intent_zellij_prev_tab(void)           { send_line("zellij action go-to-previous-tab"); }
+static inline void intent_zellij_close_tab(void)          { send_line("zellij action close-tab"); }
+static inline void intent_zellij_go_to_tab(uint8_t n) {
+  char buf[32]; snprintf(buf, sizeof(buf), "zellij action go-to-tab %u", (unsigned)n); send_line(buf);
+}
+static inline void intent_zellij_rename_tab_prompt(void)  { SEND_STRING("zellij action rename-tab "); }
+static inline void intent_zellij_new_tab_layout_prompt(void){
+  SEND_STRING("zellij action new-tab --layout "); // dann Pfad + optional: " --name "
 }
 
 // Panes (splits / focus / resize / close / floating)
-static inline void intent_zellij_new_pane_right(void) {
-  send_line("zellij action new-pane -d right");
-} // vertikaler Split
-static inline void intent_zellij_new_pane_down(void) {
-  send_line("zellij action new-pane -d down");
-} // horizontaler Split
-static inline void intent_zellij_new_pane_floating(void) {
-  send_line("zellij action new-pane -f");
-}
-static inline void intent_zellij_close_pane(void) {
-  send_line("zellij action close-pane");
-}
+static inline void intent_zellij_new_pane_right(void)     { send_line("zellij action new-pane -d right"); } // vertikaler Split
+static inline void intent_zellij_new_pane_down(void)      { send_line("zellij action new-pane -d down"); }  // horizontaler Split
+static inline void intent_zellij_new_pane_floating(void)  { send_line("zellij action new-pane -f"); }
+static inline void intent_zellij_close_pane(void)         { send_line("zellij action close-pane"); }
 
 static inline void intent_zellij_move_focus(const char *dir) {
-  char buf[48];
-  snprintf(buf, sizeof(buf), "zellij action move-focus %s", dir);
-  send_line(buf);
+  char buf[48]; snprintf(buf, sizeof(buf), "zellij action move-focus %s", dir); send_line(buf);
 }
 static inline void intent_zellij_resize(const char *dir, int amt) {
-  char buf[64];
-  snprintf(buf, sizeof(buf), "zellij action resize %s %d", dir, amt);
-  send_line(buf);
+  char buf[64]; snprintf(buf, sizeof(buf), "zellij action resize %s %d", dir, amt); send_line(buf);
 }
 
 // Toggles: floating, embed, fullscreen, frames
-static inline void intent_zellij_toggle_floating_all(void) {
-  send_line("zellij action toggle-floating-panes");
-}
-static inline void intent_zellij_toggle_embed_or_floating(void) {
-  send_line("zellij action toggle-pane-embed-or-floating");
-}
-static inline void intent_zellij_toggle_fullscreen(void) {
-  send_line("zellij action toggle-fullscreen");
-}
-static inline void intent_zellij_toggle_frames(void) {
-  send_line("zellij action toggle-pane-frames");
-}
-// ──────────────────────────────────────────────────────────────────────────────
+static inline void intent_zellij_toggle_floating_all(void)      { send_line("zellij action toggle-floating-panes"); }
+static inline void intent_zellij_toggle_embed_or_floating(void) { send_line("zellij action toggle-pane-embed-or-floating"); }
+static inline void intent_zellij_toggle_fullscreen(void)        { send_line("zellij action toggle-fullscreen"); }
+static inline void intent_zellij_toggle_frames(void)            { send_line("zellij action toggle-pane-frames"); }
 
+// ──────────────────────────────────────────────────────────────────────────────
 // WezTerm Intents (OS-spezifisch)
 static inline void intent_open_wezterm(void) {
   if (is_win()) {
@@ -355,50 +407,31 @@ static inline void intent_open_wezterm(void) {
   }
 }
 
-static inline void
-intent_split_pane_h(void) { // horizontaler Split (nebeneinander)
-  if (is_win())
-    send_line("wezterm cli split-pane -- powershell");
-  else
-    send_line("wezterm cli split-pane -- fish");
+static inline void intent_split_pane_h(void) { // horizontaler Split (nebeneinander)
+  if (is_win()) send_line("wezterm cli split-pane -- powershell");
+  else          send_line("wezterm cli split-pane -- fish");
 }
-static inline void
-intent_split_pane_v(void) { // vertikaler Split (untereinander)
-  if (is_win())
-    send_line("wezterm cli split-pane --horizontal -- powershell");
-  else
-    send_line("wezterm cli split-pane --horizontal -- fish");
+static inline void intent_split_pane_v(void) { // vertikaler Split (untereinander)
+  if (is_win()) send_line("wezterm cli split-pane --horizontal -- powershell");
+  else          send_line("wezterm cli split-pane --horizontal -- fish");
 }
 
-static inline void intent_kill_pane(void) {
-  send_line("wezterm cli kill-pane");
-}
-static inline void intent_next_pane_right(void) {
-  send_line("wezterm cli activate-pane-direction Right");
-}
-static inline void intent_prev_pane_left(void) {
-  send_line("wezterm cli activate-pane-direction Left");
-}
+static inline void intent_kill_pane(void)         { send_line("wezterm cli kill-pane"); }
+static inline void intent_next_pane_right(void)   { send_line("wezterm cli activate-pane-direction Right"); }
+static inline void intent_prev_pane_left(void)    { send_line("wezterm cli activate-pane-direction Left"); }
 static inline void intent_new_tab_here(void) {
-  if (is_win())
-    send_line("wezterm cli spawn --cwd . -- powershell");
-  else
-    send_line("wezterm cli spawn --cwd . -- fish");
+  if (is_win()) send_line("wezterm cli spawn --cwd . -- powershell");
+  else          send_line("wezterm cli spawn --cwd . -- fish");
 }
-static inline void intent_close_tab(void) {
-  send_line("wezterm cli close-tab");
-}
+static inline void intent_close_tab(void)         { send_line("wezterm cli close-tab"); }
 static inline void intent_activate_tab(uint8_t n) {
-  char buf[32];
-  snprintf(buf, sizeof(buf), "wezterm cli activate-tab %u", (unsigned)n);
-  send_line(buf);
+  char buf[32]; snprintf(buf, sizeof(buf), "wezterm cli activate-tab %u", (unsigned)n); send_line(buf);
 }
 
 // Dev-Environment
 static inline void intent_dev_env(void) {
   if (is_win()) {
-    send_line("call \"C:\\Program Files\\Microsoft Visual "
-              "Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat\"");
+    send_line("call \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat\"");
   } else {
     send_line("source ~/.local/share/nvim/env.fish");
   }
@@ -407,8 +440,7 @@ static inline void intent_dev_env(void) {
 // Build & Run (Beispiel)
 static inline void intent_build_and_run_debug(void) {
   if (is_win()) {
-    send_line(
-        "msbuild zis50.sln /p:Configuration=Debug && .\\bin\\Debug\\app.exe");
+    send_line("msbuild zis50.sln /p:Configuration=Debug && .\\bin\\Debug\\app.exe");
   } else {
     send_line("cmake --build build --config Debug && ./build/app");
   }
@@ -422,19 +454,18 @@ static inline void intent_ripgrep_project(void) {
 // rg → fzf → nvim (+Zeile)
 static inline void intent_rg_fzf_open_editor_line(void) {
   if (is_win()) {
-    send_line(
-        "rg --line-number --no-heading -S \"\" | fzf | ForEach-Object { $p = "
-        "$_ -split \":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }");
+    send_line("rg --line-number --no-heading -S \"\" | fzf | ForEach-Object { $p = $_ -split \":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }");
     tap_code(KC_LEFT);
   } else {
-    SEND_STRING("rg --line-number --no-heading --color=always -S \"\" | "
-                "fzf --ansi | "
-                "awk -F: '{print \"+\"$2\" \"$1}' | "
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
-                "xargs -r ${EDITOR:-nvim}\n"
-#else
-                "xargs -r nvim\n"
-#endif
+    SEND_STRING(
+      "rg --line-number --no-heading --color=always -S \"\" | "
+      "fzf --ansi | "
+      "awk -F: '{print \"+\"$2\" \"$1}' | "
+      #if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+      "xargs -r ${EDITOR:-nvim}\n"
+      #else
+      "xargs -r nvim\n"
+      #endif
     );
     tap_code(KC_LEFT);
   }
@@ -442,71 +473,61 @@ static inline void intent_rg_fzf_open_editor_line(void) {
 
 static inline void intent_fzf_files_preview_open(void) {
   if (is_win()) {
-    // bevorzugt git-Index; Fallback rg --files
-    send_line("(git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files }) | "
-              "fzf --ansi --preview 'bat --style=numbers --color=always {} | "
-              "head -500' | "
-              "ForEach-Object { if($_){ nvim $_ } }");
+    send_line("(git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files }) | fzf --ansi --preview 'bat --style=numbers --color=always {} | head -500' | ForEach-Object { if($_){ nvim $_ } }");
   } else {
-    SEND_STRING("(git ls-files 2>/dev/null || rg --files) | "
-                "fzf --ansi --preview 'bat --style=numbers --color=always {} | "
-                "head -500' | "
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
-                "xargs -r ${EDITOR:-nvim}\n"
-#else
-                "xargs -r nvim\n"
-#endif
+    SEND_STRING(
+      "(git ls-files 2>/dev/null || rg --files) | "
+      "fzf --ansi --preview 'bat --style=numbers --color=always {} | head -500' | "
+      #if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+      "xargs -r ${EDITOR:-nvim}\n"
+      #else
+      "xargs -r nvim\n"
+      #endif
     );
   }
 }
 
 static inline void intent_fzf_files_multi_open(void) {
   if (is_win()) {
-    send_line("(git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files }) | "
-              "fzf -m | ForEach-Object { if($_){ nvim $_ } }");
+    send_line("(git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files }) | fzf -m | ForEach-Object { if($_){ nvim $_ } }");
   } else {
     SEND_STRING("(git ls-files 2>/dev/null || rg --files) | fzf -m | ");
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+    #if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
     SEND_STRING("xargs -r ${EDITOR:-nvim}\n");
-#else
+    #else
     SEND_STRING("xargs -r nvim\n");
-#endif
+    #endif
   }
 }
 
 static inline void intent_fzf_dirs_cd(void) {
   if (is_win()) {
-    // Powershell: rekursiv Verzeichnisse, Auswahl → cd
-    send_line(
-        "Get-ChildItem -Recurse -Directory | ForEach-Object { $_.FullName } | "
-        "fzf | ForEach-Object { if($_){ Set-Location $_ } }");
+    send_line("Get-ChildItem -Recurse -Directory | ForEach-Object { $_.FullName } | fzf | ForEach-Object { if($_){ Set-Location $_ } }");
   } else {
-    // bevorzugt fd; Fallback find
-    send_line("(fd -t d -H . 2>/dev/null || find . -type d -not -path "
-              "'*/\\.git/*') | fzf | xargs -r -I{} sh -lc 'cd \"{}\"'");
+    send_line("(fd -t d -H . 2>/dev/null || find . -type d -not -path '*/\\.git/*') | fzf | xargs -r -I{} sh -lc 'cd \"{}\"'");
   }
 }
+
 static inline void intent_rg_fzf_preview_open_editor_line(void) {
   if (is_win()) {
-    // file:line:… → öffne in nvim +line; mit Preview
-    SEND_STRING("rg --line-number --no-heading --color=always -S \"\" | "
-                "fzf --ansi --delimiter=: "
-                "--preview 'bat --style=numbers --color=always "
-                "--highlight-line {2} {1} | head -500' | "
-                "ForEach-Object { $p = $_ -split \":\"; if ($p.Length -ge 2) { "
-                "nvim \"+$($p[1])\" $p[0] } }\n");
+    SEND_STRING(
+      "rg --line-number --no-heading --color=always -S \"\" | "
+      "fzf --ansi --delimiter=: "
+      "--preview 'bat --style=numbers --color=always --highlight-line {2} {1} | head -500' | "
+      "ForEach-Object { $p = $_ -split \":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }\n"
+    );
     tap_code(KC_LEFT);
   } else {
-    SEND_STRING("rg --line-number --no-heading --color=always -S \"\" | "
-                "fzf --ansi --delimiter=: "
-                "--preview 'bat --style=numbers --color=always "
-                "--highlight-line {2} {1} | head -500' | "
-                "awk -F: '{print \"+\"$2\" \"$1}' | "
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
-                "xargs -r ${EDITOR:-nvim}\n"
-#else
-                "xargs -r nvim\n"
-#endif
+    SEND_STRING(
+      "rg --line-number --no-heading --color=always -S \"\" | "
+      "fzf --ansi --delimiter=: "
+      "--preview 'bat --style=numbers --color=always --highlight-line {2} {1} | head -500' | "
+      "awk -F: '{print \"+\"$2\" \"$1}' | "
+      #if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+      "xargs -r ${EDITOR:-nvim}\n"
+      #else
+      "xargs -r nvim\n"
+      #endif
     );
     tap_code(KC_LEFT);
   }
@@ -523,6 +544,7 @@ static inline void intent_rg_context_after3(void) {
   SEND_STRING("rg -n -A 3 --hidden --glob '!.git' \"\"");
   tap_code(KC_LEFT);
 }
+
 static inline void intent_rg_multiline(void) {
   SEND_STRING("rg -n -U --hidden --glob '!.git' \"\"");
   tap_code(KC_LEFT);
@@ -546,18 +568,18 @@ static inline void intent_rg_types_go(void) {
 // git grep → fzf → nvim (+Zeile)
 static inline void intent_gitgrep_fzf_open_editor_line(void) {
   if (is_win()) {
-    send_line("git grep -n -I -e \"\" | fzf | ForEach-Object { $p = $_ -split "
-              "\":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }");
+    send_line("git grep -n -I -e \"\" | fzf | ForEach-Object { $p = $_ -split \":\"; if ($p.Length -ge 2) { nvim \"+$($p[1])\" $p[0] } }");
     tap_code(KC_LEFT);
   } else {
-    SEND_STRING("git grep -n -I -e \"\" | "
-                "fzf --ansi | "
-                "awk -F: '{print \"+\"$2\" \"$1}' | "
-#if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
-                "xargs -r ${EDITOR:-nvim}\n"
-#else
-                "xargs -r nvim\n"
-#endif
+    SEND_STRING(
+      "git grep -n -I -e \"\" | "
+      "fzf --ansi | "
+      "awk -F: '{print \"+\"$2\" \"$1}' | "
+      #if defined(UNICODEMAP_ENABLE) || defined(UNICODE_ENABLE)
+      "xargs -r ${EDITOR:-nvim}\n"
+      #else
+      "xargs -r nvim\n"
+      #endif
     );
     tap_code(KC_LEFT);
   }
@@ -612,6 +634,23 @@ void leader_end_user(void) {
     os_cycle();
   } else if (leader_sequence_two_keys(KC_O, KC_P)) {
     os_print();
+  }
+
+  // ── Shell wählen / anzeigen + Hilfe ────────────────────────────────────────
+  else if (leader_sequence_two_keys(KC_S, KC_H)) {
+    leader_help_shell_group();
+  } else if (leader_sequence_two_keys(KC_S, KC_B)) {
+    shell_set(SH_BASH, true);
+  } else if (leader_sequence_two_keys(KC_S, KC_F)) {
+    shell_set(SH_FISH, true);
+  } else if (leader_sequence_two_keys(KC_S, KC_Z)) {
+    shell_set(SH_ZSH, true);
+  } else if (leader_sequence_two_keys(KC_S, KC_W)) {
+    shell_set(SH_PWSH, true);
+  } else if (leader_sequence_two_keys(KC_S, KC_C)) {
+    shell_cycle(true);
+  } else if (leader_sequence_two_keys(KC_S, KC_P)) {
+    shell_print_to_app();
   }
 
   // ── WezTerm Tabs + Hilfe ───────────────────────────────────────────────────
@@ -673,8 +712,7 @@ void leader_end_user(void) {
 
   // commit helpers
   else if (leader_sequence_two_keys(KC_G, KC_C)) {
-    SEND_STRING("git commit -m \"\"");
-    tap_code(KC_LEFT);
+    SEND_STRING("git commit -m \"\""); tap_code(KC_LEFT);
   } else if (leader_sequence_three_keys(KC_G, KC_C, KC_F)) {
     SEND_STRING("git commit -m \"fix: ");
   } else if (leader_sequence_three_keys(KC_G, KC_C, KC_B)) {
@@ -735,17 +773,14 @@ void leader_end_user(void) {
   } else if (leader_sequence_three_keys(KC_G, KC_G, KC_F)) {
     intent_gitgrep_fzf_open_editor_line();
   } else if (leader_sequence_three_keys(KC_G, KC_G, KC_P)) {
-    SEND_STRING("git grep -n -I -e \"\" -- ");
-    tap_code(KC_LEFT);
+    SEND_STRING("git grep -n -I -e \"\" -- "); tap_code(KC_LEFT);
   }
 
   // Pickaxe
   else if (leader_sequence_three_keys(KC_G, KC_P, KC_S)) {
-    send_cmd_with_empty_quotes("git log -S ");
-    send_string(" --patch --stat");
+    send_cmd_with_empty_quotes("git log -S "); send_string(" --patch --stat");
   } else if (leader_sequence_three_keys(KC_G, KC_P, KC_G)) {
-    send_cmd_with_empty_quotes("git log -G ");
-    send_string(" --patch --stat");
+    send_cmd_with_empty_quotes("git log -G "); send_string(" --patch --stat");
   }
 
   // ── fzf + Hilfe ────────────────────────────────────────────────────────────
@@ -757,8 +792,7 @@ void leader_end_user(void) {
     send_line_os("fzf | xargs -r ${EDITOR:-nvim}",
                  "fzf | ForEach-Object { nvim $_ }", NULL);
   } else if (leader_sequence_two_keys(KC_F, KC_P)) {
-    send_line(
-        "fzf --preview 'bat --style=numbers --color=always {} | head -500'");
+    send_line("fzf --preview 'bat --style=numbers --color=always {} | head -500'");
   } else if (leader_sequence_three_keys(KC_G, KC_F, KC_F)) {
     send_line("git ls-files | fzf");
   }
@@ -773,8 +807,7 @@ void leader_end_user(void) {
   } else if (leader_sequence_two_keys(KC_R, KC_A)) {
     send_cmd_with_empty_quotes("git ls-files | rg -n --hidden --glob '!.git' ");
   } else if (leader_sequence_two_keys(KC_R, KC_L)) {
-    SEND_STRING("rg -n --hidden --glob '!.git' \"\" | less -R");
-    tap_code(KC_LEFT);
+    SEND_STRING("rg -n --hidden --glob '!.git' \"\" | less -R"); tap_code(KC_LEFT);
   } else if (leader_sequence_three_keys(KC_R, KC_G, KC_R)) {
     send_cmd_with_empty_quotes("rg -n --hidden --glob '!.git' -g '*.go' ");
   } else if (leader_sequence_two_keys(KC_R, KC_B)) {
@@ -804,8 +837,7 @@ void leader_end_user(void) {
   }
 
   // —— fzf erweitert ————————————————————————————————————————————————
-  else if (leader_sequence_two_keys(
-               KC_F, KC_O)) { // Dateien mit Preview, Enter→Editor
+  else if (leader_sequence_two_keys(KC_F, KC_O)) { // Dateien mit Preview, Enter→Editor
     intent_fzf_files_preview_open();
   } else if (leader_sequence_two_keys(KC_F, KC_M)) { // Multi-Select → Editor
     intent_fzf_files_multi_open();
@@ -845,9 +877,10 @@ void leader_end_user(void) {
     intent_yazi_git_root();
   } else if (leader_sequence_two_keys(KC_Y, KC_F)) {
     send_line_os(
-        "yazi \"$(git ls-files 2>/dev/null || rg --files)\"",
-        "yazi (git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files })",
-        NULL);
+      "yazi \"$(git ls-files 2>/dev/null || rg --files)\"",
+                 "yazi (git ls-files 2>$null; if($LASTEXITCODE -ne 0){ rg --files })",
+                 NULL
+    );
   }
 
   // ── zellij + Hilfe ─────────────────────────────────────────────────────────
@@ -864,8 +897,7 @@ void leader_end_user(void) {
     intent_zellij_attach_prompt();
   } else if (leader_sequence_two_keys(KC_J, KC_K)) { // kill-session <name>
     intent_zellij_kill_session_prompt();
-  } else if (leader_sequence_three_keys(KC_J, KC_S,
-                                        KC_R)) { // rename-session <name>
+  } else if (leader_sequence_three_keys(KC_J, KC_S, KC_R)) { // rename-session <name>
     intent_zellij_rename_session_prompt();
   }
 
@@ -876,11 +908,9 @@ void leader_end_user(void) {
     intent_zellij_prev_tab();
   } else if (leader_sequence_three_keys(KC_J, KC_T, KC_X)) { // close-tab
     intent_zellij_close_tab();
-  } else if (leader_sequence_three_keys(KC_J, KC_T,
-                                        KC_R)) { // rename-tab <name>
+  } else if (leader_sequence_three_keys(KC_J, KC_T, KC_R)) { // rename-tab <name>
     intent_zellij_rename_tab_prompt();
-  } else if (leader_sequence_three_keys(
-                 KC_J, KC_T, KC_L)) { // new-tab --layout <file> --name <name>
+  } else if (leader_sequence_three_keys(KC_J, KC_T, KC_L)) { // new-tab --layout <file> --name <name>
     intent_zellij_new_tab_layout_prompt();
   } else if (leader_sequence_three_keys(KC_J, KC_T, KC_1)) {
     intent_zellij_go_to_tab(1);
@@ -903,11 +933,9 @@ void leader_end_user(void) {
   }
 
   // Panes (Splits / Floating / Close)
-  else if (leader_sequence_three_keys(KC_J, KC_P,
-                                      KC_H)) { // split vertikal (rechts)
+  else if (leader_sequence_three_keys(KC_J, KC_P, KC_H)) { // split vertikal (rechts)
     intent_zellij_new_pane_right();
-  } else if (leader_sequence_three_keys(KC_J, KC_P,
-                                        KC_V)) { // split horizontal (unten)
+  } else if (leader_sequence_three_keys(KC_J, KC_P, KC_V)) { // split horizontal (unten)
     intent_zellij_new_pane_down();
   } else if (leader_sequence_three_keys(KC_J, KC_P, KC_F)) { // floating pane
     intent_zellij_new_pane_floating();
