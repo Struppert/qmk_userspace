@@ -1,0 +1,29 @@
+#pragma once
+// V1 encoder: identische Limits
+
+#undef DYNAMIC_KEYMAP_LAYER_COUNT
+#define DYNAMIC_KEYMAP_LAYER_COUNT 8
+
+#undef DYNAMIC_KEYMAP_MACRO_COUNT
+#define DYNAMIC_KEYMAP_MACRO_COUNT 8
+
+#undef DYNAMIC_MACRO_SIZE
+#define DYNAMIC_MACRO_SIZE 256
+
+// Unicode-Input-Modi für UC(...)
+#define UNICODE_SELECTED_MODES                                                 \
+  UNICODE_MODE_LINUX, UNICODE_MODE_WINDOWS, UNICODE_MODE_WINCOMPOSE
+
+// Mod-/Layer-Tap Tuning
+#define TAPPING_TERM 250
+#define QUICK_TAP_TERM 90
+#define TAPPING_TERM_PER_KEY
+#define RETRO_TAPPING
+
+#define LEADER_TIMEOUT 500
+#define LEADER_PER_KEY_TIMING
+
+#define COMBO_TERM 40
+#define COMBO_VARIABLE_LEN
+#define COMBO_ONLY_FROM_LAYER 0
+#define COMBO_SHOULD_TRIGGER

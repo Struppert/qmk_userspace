@@ -10,6 +10,7 @@ extern "C" {
 #endif
 
 // ── Layers (public, used by other translation units) ───────────────────────
+#ifndef V1_MINIMAL_ENUM
 enum layers {
   _QWERTZ = 0,
   _NEOQWERTZ1,
@@ -24,6 +25,28 @@ enum layers {
   _SYS,
   _RGB,
 };
+#else
+enum layers {
+  _QWERTZ = 0,
+  _NEOQWERTZ1,
+  _NEOQWERTZ2,
+  _NEOQWERTZ3,
+  _NEOQWERTZ4,
+  _FN,
+  _SYS,
+  _RGB,
+};
+#endif
+
+#ifdef V1_MINIMAL_ENUM
+// Wenn NOTED-Layer fehlen, mappe sie auf vorhandene:
+#ifndef _NOTED1
+#define _NOTED1 _NEOQWERTZ2
+#define _NOTED2 _NEOQWERTZ2
+#define _NOTED3 _NEOQWERTZ3
+#define _NOTED4 _NEOQWERTZ4
+#endif
+#endif
 
 // ── Custom keycodes (public) ───────────────────────────────────────────────
 enum custom_keycodes {
