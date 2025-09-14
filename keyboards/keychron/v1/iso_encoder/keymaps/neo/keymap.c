@@ -22,31 +22,23 @@
 #include "combos_bindings.inc"
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
-    // Default-F-Row
     [_QWERTZ]      = KEYMAP_75_ISO_V1(     QWERTZ60,      (BR7_POS_1_3_4_5_7(QWERTZ60,      KC_LGUI, QK_LEAD))),
     [_NEOQWERTZ1]  = KEYMAP_75_ISO_V1(     NEOQWERTZ1_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ1_60, KC_LGUI, QK_LEAD))),
 
-    // Alternative F-Row (dein Wunsch)
-    [_NEOQWERTZ2]  = KEYMAP_75_ISO_V1_FN(  NEOQWERTZ2_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ2_60, KC_LGUI, QK_LEAD))),
+    [_NEOQWERTZ2]  = KEYMAP_75_ISO_V1(     NEOQWERTZ2_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ2_60, KC_LGUI, QK_LEAD))),
 
-    // Default-F-Row
     [_NEOQWERTZ3]  = KEYMAP_75_ISO_V1(     NEOQWERTZ3_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ3_60, KC_LGUI, QK_LEAD))),
     [_NEOQWERTZ4]  = KEYMAP_75_ISO_V1(     NEOQWERTZ4_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ4_60, KC_LGUI, QK_LEAD))),
 
-    // Default-F-Row
     [_NOTED1]      = KEYMAP_75_ISO_V1(     NOTED1_60,     (BR7_POS_1_3_4_5_7(NOTED1_60,     KC_LGUI, QK_LEAD))),
 
-    // Alternative F-Row (dein Wunsch)
-    [_NOTED2]      = KEYMAP_75_ISO_V1_FN(  NOTED2_60,     (BR7_POS_1_3_4_5_7(NOTED2_60,     KC_LGUI, QK_LEAD))),
+    [_NOTED2]      = KEYMAP_75_ISO_V1(     NOTED2_60,     (BR7_POS_1_3_4_5_7(NOTED2_60,     KC_LGUI, QK_LEAD))),
 
-    // Default-F-Row
     [_NOTED3]      = KEYMAP_75_ISO_V1(     NOTED3_60,     (BR7_POS_1_3_4_5_7(NOTED3_60,     KC_LGUI, QK_LEAD))),
     [_NOTED4]      = KEYMAP_75_ISO_V1(     NOTED4_60,     (BR7_POS_1_3_4_5_7(NOTED4_60,     KC_LGUI, QK_LEAD))),
 
-    // Alternative F-Row (dein Wunsch)
-    [_FN]          = KEYMAP_75_ISO_V1_FN(  FN60,          (BR7_POS_1_3_4_5_7(FN60,          KC_LGUI, QK_LEAD))),
+    [_FN]          = KEYMAP_75_ISO_V1(     FN60,          (BR7_POS_1_3_4_5_7(FN60,          KC_LGUI, QK_LEAD))),
 
-    // Default-F-Row
     [_SYS]         = KEYMAP_75_ISO_V1(     SYS60,         (BR7_POS_1_3_4_5_7(SYS60,         KC_LGUI, QK_LEAD))),
     [_RGB]         = KEYMAP_75_ISO_V1(     RGB60,         (BR7_POS_1_3_4_5_7(RGB60,         KC_LGUI, QK_LEAD))),
 
@@ -68,3 +60,12 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 // clang-format on
 
 #include "tap_dance_bindings.inc"
+
+bool dip_switch_update_user(uint8_t index, bool active) {
+  if (index == 0) {
+    // Konvention: active == Mac-Stellung
+    default_layer_set(1UL << (active ? _NEOQWERTZ1 : _QWERTZ));
+    return false; // Event verarbeitet
+  }
+  return true;
+}
