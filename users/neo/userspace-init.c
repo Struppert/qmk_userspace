@@ -1,12 +1,14 @@
 // users/neo/userspace-init.c
 #include QMK_KEYBOARD_H
-#include "os_state.h"   // wir erweitern’s gleich um Shell-API
+#include "os_state.h"
 
-// --- Versionierung / Layout ---
+// ──────────────────────────────────────────────────────────────────────────────
+// Persistentes User-Wort (32 Bit) Layout
+// [31:16] MAGIC, [15:8] VERSION, [7:6] reserved, [5:4] reserved, [3:2] SHELL, [1:0] OS
+// ──────────────────────────────────────────────────────────────────────────────
 #define USR_MAGIC     0xBEEF
 #define USR_VERSION   1
 
-// Bitlayout
 #define OS_SHIFT      0
 #define OS_MASK       0x3u
 
@@ -20,48 +22,81 @@
 #define MAG_MASK      0xFFFFu
 
 static inline uint32_t pack_user(uint8_t os, uint8_t sh) {
-  return ((uint32_t)(USR_MAGIC & MAG_MASK) << MAG_SHIFT) |
-  ((uint32_t)(USR_VERSION & VER_MASK) << VER_SHIFT) |
-  ((uint32_t)(os & OS_MASK) << OS_SHIFT) |
-  ((uint32_t)(sh & SH_MASK) << SH_SHIFT);
+  uint32_t w = 0;
+  w |= ((uint32_t)(os & OS_MASK)) << OS_SHIFT;
+  w |= ((uint32_t)(sh & SH_MASK)) << SH_SHIFT;
+  w |= ((uint32_t)(USR_VERSION & VER_MASK)) << VER_SHIFT;
+  w |= ((uint32_t)(USR_MAGIC & MAG_MASK)) << MAG_SHIFT;
+  return w;
 }
 
 static inline void unpack_user(uint32_t w, uint8_t *os, uint8_t *sh, uint16_t *magic, uint8_t *ver) {
-  *magic = (uint16_t)((w >> MAG_SHIFT) & MAG_MASK);
-  *ver   = (uint8_t)((w >> VER_SHIFT) & VER_MASK);
-  *os    = (uint8_t)((w >> OS_SHIFT) & OS_MASK);
-  *sh    = (uint8_t)((w >> SH_SHIFT) & SH_MASK);
+  if (os)    *os    = (uint8_t)((w >> OS_SHIFT)  & OS_MASK);
+  if (sh)    *sh    = (uint8_t)((w >> SH_SHIFT)  & SH_MASK);
+  if (ver)   *ver   = (uint8_t)((w >> VER_SHIFT) & VER_MASK);
+  if (magic) *magic = (uint16_t)((w >> MAG_SHIFT) & MAG_MASK);
 }
 
-// Zentraler Commit
-static void userspace_commit(uint8_t os, uint8_t sh) {
-  eeconfig_update_user(pack_user(os, sh));
-}
-
-// Wird aus os_state.c aufgerufen, wenn OS/Shell geändert wird:
-void userspace_persist_settings(uint8_t os, uint8_t sh) {
-  userspace_commit(os, sh);
-}
-
-// Initialisierung der Defaults + Laden aus EEPROM
+// ──────────────────────────────────────────────────────────────────────────────
+// QMK EECONFIG Hooks
+// ──────────────────────────────────────────────────────────────────────────────
 void eeconfig_init_user(void) {
-  // Defaults: OS=LNX, SHELL=FISH (anpassen, falls anders gewünscht)
-  userspace_commit(/*os*/1, /*sh*/1);
+  // Defaults: OS = Linux (1), Shell = fish (1)
+  uint8_t os = (uint8_t)OS_LNX;
+  uint8_t sh = (uint8_t)SH_FISH;
+  uint32_t w = pack_user(os, sh);
+  eeconfig_update_user(w);
 }
 
-void keyboard_post_init_user(void) {
+void userspace_persist_settings(uint8_t os, uint8_t sh) {
+  // Bewahrt MAGIC/VER, aktualisiert OS/SHELL
+  uint32_t w_old = eeconfig_read_user();
+  uint16_t magic = 0; uint8_t ver = 0, os_old = 0, sh_old = 0;
+  unpack_user(w_old, &os_old, &sh_old, &magic, &ver);
+
+  if (magic != USR_MAGIC || ver != USR_VERSION) {
+    // Wenn veraltet/leer: mit Defaults neu initialisieren
+    eeconfig_init_user();
+  }
+  uint32_t w_new = pack_user(os, sh);
+  eeconfig_update_user(w_new);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Init: beim Booten OS/Shell aus EEPROM laden und Anwenden
+// ──────────────────────────────────────────────────────────────────────────────
+void matrix_init_user(void) {
   uint32_t w = eeconfig_read_user();
-  uint8_t os = 1, sh = 1, ver = 0; uint16_t magic = 0;
+
+  uint8_t os = (uint8_t)OS_LNX;   // Defaults
+  uint8_t sh = (uint8_t)SH_FISH;
+  uint16_t magic = 0; uint8_t ver = 0;
 
   unpack_user(w, &os, &sh, &magic, &ver);
 
   if (magic != USR_MAGIC || ver != USR_VERSION) {
+    // Eeprom nicht initialisiert oder andere Version → Defaults setzen
     eeconfig_init_user();
-    os = 1; sh = 1; // Defaults (Linux/fish)
+    os = (uint8_t)OS_LNX;
+    sh = (uint8_t)SH_FISH;
   }
 
-  // Erst OS setzen (kann die Shell auto-koppeln) …
+  // Erst OS setzen (koppelt im Router ggf. Default-Shell), dann Shell explizit
   os_set((os_mode_t)os);
-
-  shell_set((shell_t)sh, false);
+  shell_set((shell_t)sh, false);  // false: hier nicht erneut persistieren
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// WICHTIG: KEIN doppeltes keyboard_post_init_user!
+// Falls du hier noch Board-spezifisches LED-/RGB-Init brauchst,
+// dann aktiviere eine EINZIGE Definition und schütze sie, falls
+// KEYMAP_INTROSPECTION_ENABLE verwendet wird.
+// ──────────────────────────────────────────────────────────────────────────────
+#if defined(KEYMAP_INTROSPECTION_ENABLE)
+// Wenn Introspection aktiv ist, lassen wir keyboard_post_init_user leer/weg,
+// um LTO-Multiple-Definitionen zu vermeiden.
+#else
+void keyboard_post_init_user(void) {
+  // optional: RGB-Init, Hinweise, etc. Aktuell bewusst leer.
+}
+#endif
