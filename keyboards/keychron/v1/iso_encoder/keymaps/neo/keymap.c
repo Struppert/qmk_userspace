@@ -2,7 +2,7 @@
 #define LAYOUT_ISO LAYOUT_iso_83
 #include QMK_KEYBOARD_H
 
-#define V1_MINIMAL_ENUM
+// #define V1_MINIMAL_ENUM // z.Z. nicht noetig da eeprom geaendert wurde
 #include "keymap_iso_common.h"
 #include "tap_dance_ids.h"
 
@@ -33,7 +33,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_NEOQWERTZ3]  = KEYMAP_75_ISO_V1(     NEOQWERTZ3_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ3_60, KC_LGUI, QK_LEAD))),
     [_NEOQWERTZ4]  = KEYMAP_75_ISO_V1(     NEOQWERTZ4_60, (BR7_POS_1_3_4_5_7(NEOQWERTZ4_60, KC_LGUI, QK_LEAD))),
 
-    /*
     // Default-F-Row
     [_NOTED1]      = KEYMAP_75_ISO_V1(     NOTED1_60,     (BR7_POS_1_3_4_5_7(NOTED1_60,     KC_LGUI, QK_LEAD))),
 
@@ -43,7 +42,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     // Default-F-Row
     [_NOTED3]      = KEYMAP_75_ISO_V1(     NOTED3_60,     (BR7_POS_1_3_4_5_7(NOTED3_60,     KC_LGUI, QK_LEAD))),
     [_NOTED4]      = KEYMAP_75_ISO_V1(     NOTED4_60,     (BR7_POS_1_3_4_5_7(NOTED4_60,     KC_LGUI, QK_LEAD))),
-    */
 
     // Alternative F-Row (dein Wunsch)
     [_FN]          = KEYMAP_75_ISO_V1_FN(  FN60,          (BR7_POS_1_3_4_5_7(FN60,          KC_LGUI, QK_LEAD))),

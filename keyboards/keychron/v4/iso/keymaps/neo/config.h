@@ -1,5 +1,38 @@
 #pragma once
 
+// --- EEPROM / Wear-leveling: keymap-level override ---
+#ifdef EEPROM_DRIVER
+#undef EEPROM_DRIVER
+#endif
+#define EEPROM_DRIVER wear_leveling
+
+#ifdef WEAR_LEVELING_BACKING_SIZE
+#undef WEAR_LEVELING_BACKING_SIZE
+#endif
+#define WEAR_LEVELING_BACKING_SIZE (8 * 1024) // 8 KiB Flash reserviert
+
+#ifdef WEAR_LEVELING_LOGICAL_SIZE
+#undef WEAR_LEVELING_LOGICAL_SIZE
+#endif
+#define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024) // 4 KiB für VIA sichtbar
+
+// --- VIA / Dynamic Keymap Limits: MUSS >= realer Layer-Anzahl sein ---
+#ifdef DYNAMIC_KEYMAP_LAYER_COUNT
+#undef DYNAMIC_KEYMAP_LAYER_COUNT
+#endif
+#define DYNAMIC_KEYMAP_LAYER_COUNT 12
+
+#ifdef DYNAMIC_KEYMAP_MACRO_COUNT
+#undef DYNAMIC_KEYMAP_MACRO_COUNT
+#endif
+#define DYNAMIC_KEYMAP_MACRO_COUNT 15
+
+#ifdef DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE
+#undef DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE
+#endif
+
+#define DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE                                       \
+  1500 // ~15 Makros × ~50 Keystrokes × 2B
 // VIA: wir nutzen 12 Layer (0..11)
 #ifdef DYNAMIC_KEYMAP_LAYER_COUNT
 #undef DYNAMIC_KEYMAP_LAYER_COUNT

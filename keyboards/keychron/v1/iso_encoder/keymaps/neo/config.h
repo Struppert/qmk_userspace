@@ -1,8 +1,24 @@
 #pragma once
 // V1 encoder: identische Limits
 
+// --- EEPROM / Wear-leveling: keymap-level override ---
+#ifdef EEPROM_DRIVER
+#undef EEPROM_DRIVER
+#endif
+#define EEPROM_DRIVER wear_leveling
+
+#ifdef WEAR_LEVELING_BACKING_SIZE
+#undef WEAR_LEVELING_BACKING_SIZE
+#endif
+#define WEAR_LEVELING_BACKING_SIZE (8 * 1024) // 8 KiB Flash reserviert
+
+#ifdef WEAR_LEVELING_LOGICAL_SIZE
+#undef WEAR_LEVELING_LOGICAL_SIZE
+#endif
+#define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024) // 4 KiB für VIA sichtbar
+
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
-#define DYNAMIC_KEYMAP_LAYER_COUNT 8
+#define DYNAMIC_KEYMAP_LAYER_COUNT 12
 
 #undef DYNAMIC_KEYMAP_MACRO_COUNT
 #define DYNAMIC_KEYMAP_MACRO_COUNT 8
