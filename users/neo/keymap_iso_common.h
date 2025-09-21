@@ -24,6 +24,9 @@ enum layers {
   _FN,
   _SYS,
   _RGB,
+#ifdef _BLUETOOTH_LAYER
+  _WIN_FN,
+#endif
 };
 #else
 enum layers {
@@ -35,6 +38,7 @@ enum layers {
   _FN,
   _SYS,
   _RGB,
+  _WIN_FN,
 };
 #endif
 
