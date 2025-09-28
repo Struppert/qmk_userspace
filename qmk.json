@@ -1,17 +1,9 @@
 {
-  "userspace_version": "1.0",
-  "build_targets": [
-    [
-      "keychron/q4/iso",
-      "neo"
-    ],
-    [
-      "keychron/v4/iso",
-      "neo"
-    ],
-    [
-      "keychron/v1/iso_encoder",
-      "neo"
+    "userspace_version": "1.1",
+    "build_targets": [
+        ["keychron/q4/iso", "neo"],
+        ["keychron/v4/iso", "neo"],
+        ["keychron/v1/iso_encoder", "neo"],
+        ["keychron/v2/iso_encoder", "neo"]
     ]
-  ]
 }
