@@ -33,8 +33,7 @@ KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_VOLD, KC_VOLU,  _______,  _______,  RM_TO
 /* Row4 main */ MAIN##_ROW4 \
 /* Row4 mid  */ Q3_CENTER_ROW4, \
 /* Row5 br   */ EXPAND BRROW5, \
-/* Row5 mid  */ Q3_CENTER_ROW5, \
-/* final extra slot (k4O) */ KC_NO
+/* Row5 mid  */ Q3_CENTER_ROW5
 
 // Wrapper
 #define KEYMAP_TKL_ISO_Q3(MAIN, BRROW5) \
