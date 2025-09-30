@@ -4,6 +4,7 @@
         ["keychron/q4/iso", "neo"],
         ["keychron/v4/iso", "neo"],
         ["keychron/v1/iso_encoder", "neo"],
-        ["keychron/v2/iso_encoder", "neo"]
+        ["keychron/v2/iso_encoder", "neo"],
+        ["keychron/q3/iso", "neo"]
     ]
 }
