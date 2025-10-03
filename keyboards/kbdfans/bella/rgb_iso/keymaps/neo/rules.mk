@@ -9,5 +9,7 @@ MOUSEKEY_ENABLE   = no
 NKRO_ENABLE       = no
 VIA_ENABLE        = yes
 
+EXTRAFLAGS += -Wno-error=discarded-qualifiers
+
 override KEYMAP_INTROSPECTION_ENABLE = no
 SRC_EXCLUDE += quantum/keymap_introspection.c

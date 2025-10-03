@@ -22,7 +22,7 @@
 #include "formfactors/row5_pick.h"
 
 // Combos (oder Stub, oder aus wenn COMBO_ENABLE=no)
-#if defined(__AVR__)  // nur nötig/aktiv auf AVR
+#if defined(__AVR__) // nur nötig/aktiv auf AVR
 #if defined(__has_builtin)
 #if __has_builtin(__builtin_popcount) /* dummy to keep compilers calm */
 #endif
@@ -46,14 +46,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 	[_NEOQWERTZ3]  = KEYMAP_75_ISO_BELLA(     NEOQWERTZ3_60, (BR6_POS_1_3_4_5_6(NEOQWERTZ3_60, KC_LGUI))),
 	[_NEOQWERTZ4]  = KEYMAP_75_ISO_BELLA(     NEOQWERTZ4_60, (BR6_POS_1_3_4_5_6(NEOQWERTZ4_60, KC_LGUI))),
 
-	/*
+	
 	[_NOTED1]      = KEYMAP_75_ISO_BELLA(     NOTED1_60,     (BR6_POS_1_3_4_5_6(NOTED1_60,     KC_LGUI))),
 
 	[_NOTED2]      = KEYMAP_75_ISO_BELLA(     NOTED2_60,     (BR6_POS_1_3_4_5_6(NOTED2_60,     KC_LGUI))),
 
 	[_NOTED3]      = KEYMAP_75_ISO_BELLA(     NOTED3_60,     (BR6_POS_1_3_4_5_6(NOTED3_60,     KC_LGUI))),
 	[_NOTED4]      = KEYMAP_75_ISO_BELLA(     NOTED4_60,     (BR6_POS_1_3_4_5_6(NOTED4_60,     KC_LGUI))),
-	*/
 
 	[_FN]          = KEYMAP_75_ISO_BELLA(     FN60,          (BR6_POS_1_3_4_5_6(FN60,          KC_LGUI))),
 
@@ -65,7 +64,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 #if defined(__AVR__)
 #pragma push_macro("tap_dance_action_t")
-#undef  tap_dance_action_t
+#undef tap_dance_action_t
 #define tap_dance_action_t const tap_dance_action_t
 #include "tap_dance_bindings.inc"
 #pragma pop_macro("tap_dance_action_t")
@@ -74,10 +73,10 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #endif
 
 bool dip_switch_update_user(uint8_t index, bool active) {
-	if (index == 0) {
-		// Konvention: active == Mac-Stellung
-		default_layer_set(1UL << (active ? _NEOQWERTZ1 : _QWERTZ));
-		return false; // Event verarbeitet
-	}
-	return true;
+  if (index == 0) {
+    // Konvention: active == Mac-Stellung
+    default_layer_set(1UL << (active ? _NEOQWERTZ1 : _QWERTZ));
+    return false; // Event verarbeitet
+  }
+  return true;
 }
