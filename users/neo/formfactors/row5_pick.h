@@ -23,4 +23,13 @@
   /*6*/ F6, \
   /*7*/ MAIN##_R5_RCTL
 
+  // 6-Slot Bottom-Row (z. B. BELLA, 75%)
+  // picke Core auf 1,3,4,5,6 – fülle 2
+  #define BR6_POS_1_3_4_5_6(MAIN, F2) \
+  /*1*/ MAIN##_R5_LCTL, \
+  /*2*/ F2, \
+  /*3*/ MAIN##_R5_LALT, \
+  /*4*/ MAIN##_R5_SPACE, \
+  /*5*/ MAIN##_R5_RALT, \
+  /*6*/ MAIN##_R5_RCTL
 // clang-format on
