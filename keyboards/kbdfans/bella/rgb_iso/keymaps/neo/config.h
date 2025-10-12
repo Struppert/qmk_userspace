@@ -1,6 +1,6 @@
 // VIA: keine Layer im EEPROM
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
-#define DYNAMIC_KEYMAP_LAYER_COUNT 12 // <- 0 = keine VIA-Layer gespeichert
+#define DYNAMIC_KEYMAP_LAYER_COUNT 8 // <- 0 = keine VIA-Layer gespeichert
 
 // VIA: nur wenige, kurze Makros
 #undef DYNAMIC_KEYMAP_MACRO_COUNT
