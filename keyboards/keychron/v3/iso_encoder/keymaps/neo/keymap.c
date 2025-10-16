@@ -1,5 +1,5 @@
-// keyboards/keychron/q3/iso/keymaps/neo/keymap.c
-#define LAYOUT_ISO LAYOUT_tkl_iso
+// keyboards/keychron/v3/iso_encoder/keymaps/neo/keymap.c
+#define LAYOUT_ISO LAYOUT_tkl_f13_iso
 #include QMK_KEYBOARD_H
 
 // #define V1_MINIMAL_ENUM // z.Z. nicht noetig da eeprom geaendert wurde
@@ -41,17 +41,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
   [_QWERTZ]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-  [_NEOQWERTZ1]  = { ENCODER_CCW_CW(KC_VOLD, KC_VALU)},
+  [_NEOQWERTZ1]  = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_NEOQWERTZ2]  = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-  [_NEOQWERTZ3]  = { ENCODER_CCW_CW(KC_VOLD, KC_VALU)},
+  [_NEOQWERTZ3]  = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_NEOQWERTZ4]  = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-  [_NOTED1]      = { ENCODER_CCW_CW(KC_VOLD, KC_VALU)},
+  [_NOTED1]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_NOTED2]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-  [_NOTED3]      = { ENCODER_CCW_CW(KC_VOLD, KC_VALU)},
+  [_NOTED3]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_NOTED4]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-  [_FN]          = { ENCODER_CCW_CW(KC_VOLD, KC_VALU)},
+  [_FN]          = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_SYS]         = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-  [_RGB]         = { ENCODER_CCW_CW(KC_VOLD, KC_VALU)},
+  [_RGB]         = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
 };
 #endif // ENCODER_MAP_ENABLE
 
