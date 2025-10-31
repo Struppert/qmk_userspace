@@ -9,6 +9,7 @@
         ["kbdfans/bella/rgb_iso", "neo"],
         ["keychron/q8/iso", "neo"],
         ["keychron/q9/iso", "neo"],
-        ["keychron/v3/iso_encoder", "neo"]
+        ["keychron/v3/iso_encoder", "neo"],
+        ["kbdfans/kbd8x_mk3", "neo"]
     ]
 }
