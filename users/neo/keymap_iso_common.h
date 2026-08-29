@@ -10,7 +10,44 @@ extern "C" {
 #endif
 
 // ── Layers (public, used by other translation units) ───────────────────────
-#ifndef V1_MINIMAL_ENUM
+// BELLA_COMPACT_ENUM: EEPROM-constrained boards (e.g. bella) only have room
+// for 4 dynamic-keymap layers. Missing layers alias to a safe existing one
+// so shared layout headers (sys60.h etc.) that reference the full layer set
+// keep compiling instead of indexing out of bounds.
+#if defined(BELLA_COMPACT_ENUM)
+enum layers {
+  _QWERTZ = 0,
+  _FN,
+  _SYS,
+  _RGB,
+};
+#define _NEOQWERTZ1 _QWERTZ
+#define _NEOQWERTZ2 _QWERTZ
+#define _NEOQWERTZ3 _QWERTZ
+#define _NEOQWERTZ4 _QWERTZ
+#define _NOTED1     _QWERTZ
+#define _NOTED2     _QWERTZ
+#define _NOTED3     _QWERTZ
+#define _NOTED4     _QWERTZ
+#define _WIN_FN     _FN
+#elif defined(V1_MINIMAL_ENUM)
+enum layers {
+  _QWERTZ = 0,
+  _NEOQWERTZ1,
+  _NEOQWERTZ2,
+  _NEOQWERTZ3,
+  _NEOQWERTZ4,
+  _FN,
+  _SYS,
+  _RGB,
+  _WIN_FN,
+};
+// Wenn NOTED-Layer fehlen, mappe sie auf vorhandene:
+#define _NOTED1 _NEOQWERTZ2
+#define _NOTED2 _NEOQWERTZ2
+#define _NOTED3 _NEOQWERTZ3
+#define _NOTED4 _NEOQWERTZ4
+#else
 enum layers {
   _QWERTZ = 0,
   _NEOQWERTZ1,
@@ -28,28 +65,6 @@ enum layers {
   _WIN_FN,
 #endif
 };
-#else
-enum layers {
-  _QWERTZ = 0,
-  _NEOQWERTZ1,
-  _NEOQWERTZ2,
-  _NEOQWERTZ3,
-  _NEOQWERTZ4,
-  _FN,
-  _SYS,
-  _RGB,
-  _WIN_FN,
-};
-#endif
-
-#ifdef V1_MINIMAL_ENUM
-// Wenn NOTED-Layer fehlen, mappe sie auf vorhandene:
-#ifndef _NOTED1
-#define _NOTED1 _NEOQWERTZ2
-#define _NOTED2 _NEOQWERTZ2
-#define _NOTED3 _NEOQWERTZ3
-#define _NOTED4 _NEOQWERTZ4
-#endif
 #endif
 
 // ── Custom keycodes (public) ───────────────────────────────────────────────

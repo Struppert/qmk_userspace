@@ -1,23 +1,23 @@
 // keyboards/kbdfans/kbd8x_mk3/config.h
 #pragma once
 
+// Matrix size
+#define MATRIX_ROWS 12
+#define MATRIX_COLS 8
+#define DIODE_DIRECTION COL2ROW
+
 #ifndef KEYMAP_C
 #    define KEYMAP_C "keyboards/kbdfans/kbd8x_mk3/keymaps/neo/keymap.c"
 #endif
 
-#ifndef CPU_CLOCK
-#    define CPU_CLOCK 72000000UL   // 72 MHz = Standard-STM32F103 System Clock
-#endif
+// CPU_CLOCK wird von ChibiOS aus STM32_SYSCLK (siehe mcuconf.h PLL-Settings)
+// abgeleitet - platforms/chibios/chibios_config.h definiert es ungeschuetzt,
+// ein eigener #define hier wuerde kollidieren.
 
-
-// (optional, deine Größen)
-//#define WEAR_LEVELING_BACKING_SIZE (8 * 1024)
-//#define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024)
-
-// Matrix size (darf hier bleiben)
-#define MATRIX_ROWS 12
-#define MATRIX_COLS 8
-#define DIODE_DIRECTION COL2ROW
+// 12 Layer x 96 Keys x 2 Byte = 2304 Byte allein fuer Dynamic Keymaps;
+// Default-Logical-Size (1024) reicht nicht. STM32F103 hat reichlich Flash.
+#define WEAR_LEVELING_BACKING_SIZE (8 * 1024)
+#define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024)
 
 // Shift-Register (74HC165) Pins – STM32 Port-Notation:
 #define SR_LATCH_PIN B12

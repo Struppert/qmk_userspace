@@ -1,8 +1,7 @@
-// keyboards/keychron/q3/iso/keymaps/neo/keymap.c
+// keyboards/kbdfans/kbd8x_mk3/keymaps/neo/keymap.c - KBD8x with CUSTOM matrix
 #define LAYOUT_ISO LAYOUT_tkl_iso
 #include QMK_KEYBOARD_H
 
-// #define V1_MINIMAL_ENUM // z.Z. nicht noetig da eeprom geaendert wurde
 #include "keymap_iso_common.h"
 #include "tap_dance_ids.h"
 
@@ -20,6 +19,33 @@
 
 // Combos (oder Stub, oder aus wenn COMBO_ENABLE=no)
 #include "combos_bindings.inc"
+
+// Global matrix buffers - MUST be defined here for keymap_introspection.c to link
+matrix_row_t raw_matrix[MATRIX_ROWS] = {0};
+matrix_row_t matrix[MATRIX_ROWS] = {0};
+
+// Matrix wrapper functions - these are called by QMK's main loop
+// The _custom versions are implemented in keyboards/kbdfans/kbd8x_mk3/matrix.c
+extern void matrix_init_custom(void);
+extern bool matrix_scan_custom(matrix_row_t out[MATRIX_ROWS]);
+
+void matrix_init(void) {
+    matrix_init_custom();
+}
+
+uint8_t matrix_scan(void) {
+    return matrix_scan_custom(raw_matrix);
+}
+
+// matrix_get_row() is defined in matrix.c (handles MATRIX_MASKED there)
+
+// Stub for matrix_print - called only when debug_config.matrix is true
+// Define in keymap.c to avoid ARM/Thumb linking issues
+void matrix_print(void) {
+    // Debug print disabled for KBD8x to save memory
+    // If needed: print("Matrix state\n"); for debugging
+}
+
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_QWERTZ]      = KEYMAP_TKL_ISO_KBD8X(QWERTZ60,      (BR8_POS_1_3_4_5_8(QWERTZ60,      KC_LGUI, KC_RGUI, QK_LEAD))),
@@ -35,7 +61,6 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_SYS]         = KEYMAP_TKL_ISO_KBD8X(SYS60,         (BR8_POS_1_3_4_5_8(SYS60,         KC_LGUI, KC_RGUI, QK_LEAD))),
     [_RGB]         = KEYMAP_TKL_ISO_KBD8X(RGB60,         (BR8_POS_1_3_4_5_8(RGB60,         KC_LGUI, KC_RGUI, QK_LEAD))),
 };
-
 // clang-format on
 
 #include "tap_dance_bindings.inc"

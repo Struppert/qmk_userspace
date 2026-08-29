@@ -1,26 +1,52 @@
 #pragma once
+// STM32F103, gleiche Werte wie keychron/v3 (identisches EEPROM-Budget dank
+// wear_leveling mit 8 KiB Backing / 4 KiB Logical)
+
+#ifdef EEPROM_DRIVER
+#undef EEPROM_DRIVER
+#endif
+#define EEPROM_DRIVER wear_leveling
+
+#ifdef WEAR_LEVELING_BACKING_SIZE
+#undef WEAR_LEVELING_BACKING_SIZE
+#endif
+#define WEAR_LEVELING_BACKING_SIZE (8 * 1024)
+
+#ifdef WEAR_LEVELING_LOGICAL_SIZE
+#undef WEAR_LEVELING_LOGICAL_SIZE
+#endif
+#define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024)
 
 #ifdef DYNAMIC_KEYMAP_LAYER_COUNT
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
 #endif
 #define DYNAMIC_KEYMAP_LAYER_COUNT 12
 
-#define DYNAMIC_MACRO_SIZE 512
+#ifdef DYNAMIC_KEYMAP_MACRO_COUNT
+#undef DYNAMIC_KEYMAP_MACRO_COUNT
+#endif
+#define DYNAMIC_KEYMAP_MACRO_COUNT 12
+
+#ifdef DYNAMIC_MACRO_SIZE
+#undef DYNAMIC_MACRO_SIZE
+#endif
+#define DYNAMIC_MACRO_SIZE 256
 
 // Unicode-Input-Modi für UC(...)
 #define UNICODE_SELECTED_MODES                                                 \
   UNICODE_MODE_LINUX, UNICODE_MODE_WINDOWS, UNICODE_MODE_WINCOMPOSE
 
 // Mod-/Layer-Tap Tuning
+#ifdef TAPPING_TERM
+#undef TAPPING_TERM
+#endif
 #define TAPPING_TERM 250
+#ifdef QUICK_TAP_TERM
+#undef QUICK_TAP_TERM
+#endif
 #define QUICK_TAP_TERM 90
 #define TAPPING_TERM_PER_KEY
 #define RETRO_TAPPING
-
-// VIA-Makro-Slots (QK_MACRO_0..)
-#ifndef DYNAMIC_KEYMAP_MACRO_COUNT
-#define DYNAMIC_KEYMAP_MACRO_COUNT 15
-#endif
 
 #define LEADER_TIMEOUT 500
 #define LEADER_PER_KEY_TIMING

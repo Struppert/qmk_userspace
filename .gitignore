@@ -3,6 +3,7 @@
 *.bin
 *.elf
 *.map
+*.uf2
 
 # QMK build dirs
 .build/

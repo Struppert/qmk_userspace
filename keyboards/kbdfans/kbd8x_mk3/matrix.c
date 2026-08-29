@@ -3,8 +3,25 @@
 // QMK/ChibiOS only (no STM32 HAL). Implements the modern CUSTOM_MATRIX API.
 
 #include "quantum.h"
-#include "kbd8x_mk3_stm32.h"   // <- ggf. an deinen Headernamen anpassen
 #include <string.h>
+
+// Global matrix buffers - defined in keymap.c to ensure keymap_introspection.o can link
+extern matrix_row_t raw_matrix[MATRIX_ROWS];
+extern matrix_row_t matrix[MATRIX_ROWS];
+
+
+// PAL GPIO Wrapper - ChibiOS 8.4 compatibility
+// Map QMK pin notation (B12) to ChibiOS PAL
+#define GPIO_LATCH GPIOB
+#define GPIO_DATA  GPIOB
+#define PAD_LATCH  12
+#define PAD_DATA   14
+
+#define writePinLow(pin)   if(pin == SR_LATCH_PIN) palClearPad(GPIO_LATCH, PAD_LATCH)
+#define writePinHigh(pin)  if(pin == SR_LATCH_PIN) palSetPad(GPIO_LATCH, PAD_LATCH)
+#define readPin(pin)       (pin == SR_DATA_PIN ? palReadPad(GPIO_DATA, PAD_DATA) : 0)
+#define setPinOutput(pin)  if(pin == SR_LATCH_PIN) palSetPadMode(GPIO_LATCH, PAD_LATCH, PAL_MODE_OUTPUT_PUSHPULL)
+#define setPinInput(pin)   if(pin == SR_DATA_PIN) palSetPadMode(GPIO_DATA, PAD_DATA, PAL_MODE_INPUT)
 
 // ========================= Tunables & Options ===============================
 
@@ -162,3 +179,15 @@ bool matrix_scan_custom(matrix_row_t out[MATRIX_ROWS]) {
 
     return changed;
 }
+
+// Matrix helper function - required by suspend.c and keyboard.c
+// MUST be a real function, not inline or macro, to avoid ARM/Thumb linker conflicts
+matrix_row_t matrix_get_row(uint8_t row) {
+#ifdef MATRIX_MASKED
+    return matrix[row] & matrix_mask[row];
+#else
+    return matrix[row];
+#endif
+}
+
+
