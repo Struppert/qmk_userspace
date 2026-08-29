@@ -26,15 +26,24 @@ matrix_row_t matrix[MATRIX_ROWS] = {0};
 
 // Matrix wrapper functions - these are called by QMK's main loop
 // The _custom versions are implemented in keyboards/kbdfans/kbd8x_mk3/matrix.c
+#include "debounce.h"
 extern void matrix_init_custom(void);
 extern bool matrix_scan_custom(matrix_row_t out[MATRIX_ROWS]);
 
 void matrix_init(void) {
     matrix_init_custom();
+    debounce_init();
 }
 
 uint8_t matrix_scan(void) {
-    return matrix_scan_custom(raw_matrix);
+    // CUSTOM_MATRIX bypasses quantum/matrix_common.c entirely, so nothing
+    // else calls debounce() for us - without this, raw_matrix updates but
+    // matrix[] (what keyboard_task() actually reads via matrix_get_row())
+    // never does, meaning no keypress can ever register regardless of
+    // whether the scan itself is correct.
+    bool changed = matrix_scan_custom(raw_matrix);
+    changed       = debounce(raw_matrix, matrix, changed);
+    return changed;
 }
 
 // matrix_get_row() is defined in matrix.c (handles MATRIX_MASKED there)

@@ -1,8 +1,14 @@
 // keyboards/kbdfans/kbd8x_mk3/config.h
 #pragma once
 
-// Matrix size
-#define MATRIX_ROWS 12
+// Matrix size - MUST match the real scan chain length (rows*cols), not
+// just how many rows have real keys mapped. Confirmed against the real
+// YDKB firmware source (config.h: "MATRIX_ROWS 14 // max supported") -
+// the serial walking-bit scan (see matrix.c) shifts through exactly
+// MATRIX_ROWS*MATRIX_COLS positions each cycle, so a wrong row count here
+// misaligns every key after the point where our count diverges from the
+// real chain length. Only rows 0-11 have real keys; 12-13 stay unused.
+#define MATRIX_ROWS 14
 #define MATRIX_COLS 8
 #define DIODE_DIRECTION COL2ROW
 
@@ -19,13 +25,17 @@
 #define WEAR_LEVELING_BACKING_SIZE (8 * 1024)
 #define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024)
 
-// Shift-Register (74HC165) Pins – STM32 Port-Notation:
-#define SR_LATCH_PIN B12
-#define SR_CLOCK_PIN B13
-#define SR_DATA_PIN  B14
+// Matrix scan pins - NOT a 74HC165 SIPO shift register (that assumption
+// was wrong). Confirmed against the real firmware source: a serial
+// "walking bit" scan over 2 wires, SCK=PB12 (clock, output) and
+// SDI=PB13 (bidirectional: output while shifting, input while reading
+// the currently-selected key). See matrix.c for the exact protocol.
+// No config.h defines needed - matrix.c hardcodes GPIOB 12/13 directly,
+// matching the reference implementation's style.
 
 
-// RGB-Underglow (WS2812)
+// RGB-Underglow (WS2812) - disabled (RGBLIGHT_ENABLE=no), see rules.mk and
+// README.md for the open WS2812-timing-at-48MHz LED issue.
 #define WS2812_DI_PIN B15
 // optional: #define RGBLIGHT_LED_COUNT 16
 // optional: #define RGBLIGHT_SLEEP

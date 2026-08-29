@@ -1,11 +1,11 @@
 # users/neo/rules.mk — global
 
 # VIA / Unicode / QoL
-# Only bella (ATmega32u4, 28KB flash / 1KB EEPROM) is actually memory-
-# constrained. kbd8x_mk3 is STM32F103 with 512KB flash and belongs in the
-# full-featured branch below; its own rules.mk only needs to override
-# RGB_MATRIX_ENABLE (no RGB matrix hardware, just WS2812 underglow).
-ifeq ($(filter kbdfans/bella/%,$(KEYBOARD)),)
+# Bella (ATmega32u4, 28KB flash / 1KB EEPROM) and kbd8x_mk3 (STM32F103CBT6,
+# 128KB flash / 20KB RAM - confirmed against the real YDKB firmware source,
+# NOT the 512KB/64KB high-density chip assumed earlier) are both genuinely
+# memory-constrained, unlike the Keychron boards below.
+ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   VIA_ENABLE      = yes
   UNICODE_ENABLE  = yes
   NKRO_ENABLE     = yes
@@ -17,7 +17,7 @@ endif
 EXTRAKEY_ENABLE = yes
 
 # Optimierungen
-ifeq ($(filter kbdfans/bella/%,$(KEYBOARD)),)
+ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   LTO_ENABLE      = yes
 else
   LTO_ENABLE      = no
@@ -28,15 +28,10 @@ COMMAND_ENABLE  = no
 # === Feature Flags — set only in conditional below ===
 
 # RGB Matrix — conditional per keyboard
-# Keychron keyboards + kbd8x_mk3: full features (kbd8x_mk3 has no RGB
-# matrix hardware though, so RGB_MATRIX_ENABLE is forced off just for it)
-# Bella: minimal features (AVR memory-constrained)
-ifeq ($(filter kbdfans/bella/%,$(KEYBOARD)),)
-  ifeq ($(filter kbdfans/kbd8x_mk3,$(KEYBOARD)),)
-    RGB_MATRIX_ENABLE = yes
-  else
-    RGB_MATRIX_ENABLE = no
-  endif
+# Keychron keyboards: full features
+# Bella, kbd8x_mk3: minimal features (memory-constrained)
+ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
+  RGB_MATRIX_ENABLE = yes
   LEADER_ENABLE = yes
   DYNAMIC_MACRO_ENABLE = yes
   TAP_DANCE_ENABLE = yes
@@ -54,7 +49,7 @@ else
 endif
 
 # Large source files (leader, intents) only for non-memory-constrained keyboards
-ifeq ($(filter kbdfans/bella/%,$(KEYBOARD)),)
+ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   SRC += leader/core.c \
 			 leader/os_shell.c \
 			 leader/help.c \
@@ -83,7 +78,7 @@ ifeq ($(filter kbdfans/bella/%,$(KEYBOARD)),)
 			 userspace-init.c \
 			 tap_dance_impl.c
 else
-  # Bella (AVR, memory constrained): minimal leader source files
+  # Bella, kbd8x_mk3 (memory constrained): minimal leader source files
   SRC += userspace-init.c \
          os_state.c \
          leader/core.c \

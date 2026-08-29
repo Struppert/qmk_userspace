@@ -15,17 +15,22 @@
 */
 
 /*
- * ST32F103xE memory setup, with the first 16K reserved for the UniCore-F1
- * (ydkb.io) UF2 bootloader that ships on this board - confirmed by the
- * first successful flash, which linked (by accident, via the default
- * MCU_LDSCRIPT=STM32F103x8) against STM32F103x8_uf2boot.ld's 16K/20K
- * layout and booted correctly. This is the same layout, scaled to the
- * real xE flash/RAM size (512K/64K); ORIGIN(ram0) is unaffected by len,
- * so _board_magic_reg lands at the same proven-working absolute address.
+ * Real chip is STM32F103CBT6 (Medium Density: 128K flash, 20K RAM), NOT
+ * the xE/high-density part (512K/64K) previously assumed here. Confirmed
+ * against the actual YDKB/KBDFans firmware source (unicore_f1 board,
+ * github.com/yangdigi/vial-qmk-v5, ld/STM32F103CBT6_uf2_bootloader.ld):
+ * bootloader reserves the first 16K, app starts at 0x08004000.
+ *
+ * ram0 starts 0xC00 (3K) into SRAM, not at 0x20000000 - matches the
+ * pattern in QMK's own STM32F103xB_maplemini_bootloader.ld (a different
+ * but related maple/dapboot-lineage bootloader), which reserves that
+ * space for itself across the app jump. Without this reservation our own
+ * .data/.bss init could clobber whatever the bootloader still needs live
+ * in low RAM during handoff - a very plausible crash-on-boot cause.
  */
 MEMORY
 {
-    flash0 (rx) : org = 0x08000000 + 16K, len = 512k - 16K
+    flash0 (rx) : org = 0x08000000 + 16K, len = 128k - 16K
     flash1 (rx) : org = 0x00000000, len = 0
     flash2 (rx) : org = 0x00000000, len = 0
     flash3 (rx) : org = 0x00000000, len = 0
@@ -33,7 +38,7 @@ MEMORY
     flash5 (rx) : org = 0x00000000, len = 0
     flash6 (rx) : org = 0x00000000, len = 0
     flash7 (rx) : org = 0x00000000, len = 0
-    ram0   (wx) : org = 0x20000000, len = 64k
+    ram0   (wx) : org = 0x20000000 + 0xC00, len = 20k - 0xC00
     ram1   (wx) : org = 0x00000000, len = 0
     ram2   (wx) : org = 0x00000000, len = 0
     ram3   (wx) : org = 0x00000000, len = 0
