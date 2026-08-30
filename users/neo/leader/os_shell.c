@@ -7,8 +7,8 @@
 #include "os_shell.h"
 #include <stdio.h>
 
-#define SENDSTRING_LANGUAGE de_DE
-#include "sendstring_german.h"
+// German send_string LUTs now live in users/neo/sendstring_de.c (compiled
+// for every board, unlike this file) - see that file for why.
 
 // #define SHELL_DISPATCH_USE_PWSH7
 

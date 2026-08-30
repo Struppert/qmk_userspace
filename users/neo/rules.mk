@@ -16,6 +16,11 @@ else
 endif
 EXTRAKEY_ENABLE = yes
 
+# German send_string LUTs (ascii_to_keycode/shift/altgr/dead) - needed by
+# send_string()/SEND_STRING() calls AND by VIA's dynamic-macro playback on
+# every board, not just the ones that happen to compile leader/os_shell.c.
+SRC += sendstring_de.c
+
 # Optimierungen
 ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   LTO_ENABLE      = yes
