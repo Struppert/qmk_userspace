@@ -65,3 +65,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______,  _______,  _______, _______, _______, _______,  _______, _______, _______, _______,  _______,  _______,  _______, _______,
         _______, _______,  _______,           _______,          _______,  _______,          _______,           _______,            _______, _______, _______)
 };
+
+// Minimal combo & tap dance support (Q8 uses own layer enum)
+#ifdef COMBO_ENABLE
+  #include "process_combo.h"
+  combo_t key_combos[] PROGMEM = {};  // Empty, Q8 doesn't use combos
+#else
+  uint8_t key_combos[] PROGMEM = {};
+#endif
+
+#ifdef TAP_DANCE_ENABLE
+  #include "process_tap_dance.h"
+  tap_dance_action_t PROGMEM tap_dance_actions[] = {};  // Empty
+#endif
