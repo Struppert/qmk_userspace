@@ -48,12 +48,34 @@ Das Board bootet danach automatisch neu (kein manueller Power-Cycle nötig).
 | Signal | MCU-Pin | Funktion |
 |:--|:--|:--|
 | SCK | PB12 | Matrix-Scan Clock (Output) |
-| SDI | PB13 | Matrix-Scan Data (bidirektional) |
-| Rev-Detect | PB9 | Pull-up, erkennt ver5020-Variante |
-| caps/scroll indicator | PB14 / PA8 | Teil der WS2812-Kette, nicht simple GPIO-LEDs (siehe RGB-Abschnitt) |
-| RGB_DI | PB15 | WS2812 Data Out (2 Indikator-LEDs + 4 Underglow-LEDs, Kette = 6) |
-| RST Pads | NRST↔GND | Hard-Reset |
+| SDI | PB13 | Matrix-Scan Data (bidirektional); doppelt genutzt für Pull-up/-down-Autodetect (`has_extra_pullup`, `matrix_init_custom()`) |
+| Rev-Detect | PB9 | Pull-up, erkennt `ver5020`-Variante (`is_ver5020`) - welcher Zweig dieses konkrete Board nimmt, ist nicht geloggt/verifiziert, aber die Matrix funktioniert einwandfrei damit |
+| caps/scroll GPIO (Fallback, unbestätigt) | PB14 / PA8 | Redundanter simple-GPIO-Pfad wie in der Vendor-Referenz (`single_color_indicator_set()`, on=HIGH) - zeigte empirisch **keine sichtbare Wirkung** auf diesem Board; die tatsächlich funktionierende Indicator-Ansteuerung läuft über die WS2812-Kette (siehe unten) |
+| RGB_DI | PB15 = TIM1_CH3N | WS2812 Data Out über Hardware-PWM+DMA (2 Indikator-LEDs @ Position 0/1 + 4 Underglow-LEDs @ Position 2-5, Kette = 6) |
+| RST Pads | NRST↔GND | Hard-Reset (kein Taster bestückt) |
 | SWD | PA13/14 + GND | Debug |
+
+## 🗺️ Physische Tastenpositionen (Matrix-Koordinaten)
+Nicht offensichtlich aus dem Code - Positionsargumente in den `*_ROW*`-Makros
+werden 1:1 der Reihe nach den `"matrix":[row,col]`-Einträgen aus
+`keyboard.json` zugeordnet, nicht nach Augenschein. Wichtige, in dieser
+Session verifizierte Zuordnungen (per `dynamic_keymap_get_keycode`
+gegengeprüft):
+
+| Physische Taste | Matrix | Default-Keycode (Layer 0, `_QWERTZ`) |
+|:--|:--|:--|
+| Tab | `[2,0]` | `KC_TAB` |
+| Capslock | `[2,7]` | `TD(TD_CAPS_SYS_LEAD)` - Tap→`KC_ESC`, Hold→Layer `_SYS` (kein `KC_CAPS`!) |
+| Druck/PrtScn | `[10,0]` | `KC_PSCR` |
+| Scroll Lock | `[11,4]` | `KC_NO` (unbelegt - keine der `*_ROW0`-Makros vergibt hier `KC_SCRL`) |
+| Pause | `[11,5]` | `RM_NEXT` |
+
+Capslock sendet also standardmäßig **kein** `KC_CAPS` - das ist Absicht
+(User-Preference, Capslock gilt als "unnötigster Key", daher Tap-Dance-
+Überladung). Für einen Live-Test wurden `KC_CAPS`/`KC_SCRL` testweise per
+VIA gesetzt und per `id_dynamic_keymap_reset` (Raw-HID-Kommando `0x06`,
+ohne führendes Report-ID-Byte, s.u.) wieder auf die kompilierten Defaults
+zurückgesetzt - kein Neuflash nötig, siehe Abschnitt "Raw-HID-Scripting".
 
 ## 💡 VIA
 - VIA aktiviert (`VIA_ENABLE = yes`, `users/neo/rules.mk`).
@@ -99,11 +121,12 @@ nötig - einfach die Draft Definition in VIA neu laden.
 | WS2812_DI_PIN | PB15 = TIM1_CH3N (Default-AF, kein Remap) |
 | WS2812_DRIVER | `pwm` (Hardware-PWM+DMA, siehe unten) |
 | Kette | 6 LEDs: 2 Capslock/Scroll-Indikatoren (Position 0/1) + 4 Underglow (Position 2-5), per realer Vendor-Firmware: `PHY_INDICATOR_NUM=2`, `RGBLED_NUM=4` |
-| RGBLIGHT_LAYERS | 2 Layer (Caps=rot @0, Scroll=blau @1), `RGBLIGHT_LAYERS_OVERRIDE_RGB_OFF` gesetzt |
+| RGBLIGHT_LAYERS | 2 Layer (Caps=rot @0, Scroll=blau @1), `RGBLIGHT_LAYERS_OVERRIDE_RGB_OFF` gesetzt, `RGBLIGHT_MAX_LAYERS 2` (RAM-Sparen ggü. Default 8) |
 | RGBLIGHT_ENABLE | `yes` |
+| RGBLIGHT_LIMIT_VAL | `50` (Sicherheits-Obergrenze für Helligkeit/Stromaufnahme, 1:1 vom Vendor-Wert übernommen, nicht selbst gegen den USB-Port gemessen) |
 
-**Status (Stand 2026-08-30): Capslock-Indicator funktioniert, Underglow
-läuft sauber.** Root Cause für die alten "LEDs bleiben an/weiß"-Symptome
+**Status (Stand 2026-08-30): Capslock-Indicator funktioniert, Kette geht
+sauber auf Schwarz.** Root Cause für die alten "LEDs bleiben an/weiß"-Symptome
 war der QMK-Standard-WS2812-**Bitbang**-Treiber, dessen NOP-Timing-Schleife
 auf diesem Board (48 MHz HSI-only SYSCLK statt der für STM32F103-Boards
 üblichen 72 MHz) offenbar nicht sauber lief - Details/Verifikation dazu
@@ -130,6 +153,30 @@ Grund die Numlock-LED-Bit statt der Scrolllock-LED-Bit (Linux-VT-
 Tastaturschicht, nicht QMK). Da derselbe Indicator-Code-Pfad für Capslock
 nachweislich funktioniert, ist die Firmware-Seite hier nicht die Ursache.
 
+## 🐍 Raw-HID-Scripting (VIA-Protokoll direkt ansprechen)
+Für gezielte Diagnose/Reset-Aktionen ohne die VIA-App: Python `hidapi` gegen
+das Raw-HID-Interface (`/dev/hidrawN`, Interface `.1` bei diesem Board -
+Interface `.0` ist die normale Tastatur, `.2` System/Consumer-Control).
+Passenden Node finden:
+```bash
+udevadm info -q property -p /sys/class/hidraw/hidrawN | grep HID_ID
+# gesucht: HID_ID=0003:00009D5B:00002303, Interface .1
+```
+**Wichtig:** Reports sind exakt 32 Byte, **ohne** führendes Report-ID-Byte
+(anders als die übliche hidapi-Konvention!) - ein vorangestelltes `0x00`
+verschiebt alle Felder um 1 und die Firmware ignoriert den Befehl
+stillschweigend (sieht wie eine tote Verbindung aus, ist aber nur ein
+falsches Report-Format). Außerdem kann nur eine Gegenstelle sinnvoll
+gleichzeitig kommunizieren - `fuser -v /dev/hidrawN` prüfen, ob z.B. noch
+ein VIA-Browser-Tab offen ist, bevor man "kaputte Verbindung" vermutet.
+
+Nützliche Kommandos (`quantum/via.h`):
+| Kommando | Byte 0 | Zweck |
+|:--|:--|:--|
+| `id_get_protocol_version` | `0x01` | Verbindungstest, Antwort enthält Protokollversion |
+| `id_dynamic_keymap_get_keycode` | `0x04` | + Layer, Row, Col → liest einen Keycode |
+| `id_dynamic_keymap_reset` | `0x06` | Setzt **alle** Layer/Keys auf die kompilierten Defaults zurück (macht dasselbe wie VIAs "Reset Keyboard to Default", aber gezielt ohne die GUI - praktisch nach Live-Tests einzelner Keys über VIA) |
+
 ## 🧰 Fehlerbehebung
 | Problem | Ursache | Lösung |
 |:--|:--|:--|
@@ -141,6 +188,42 @@ nachweislich funktioniert, ist die Firmware-Seite hier nicht die Ursache.
 | Scrolllock-LED reagiert nicht | Host toggelt LED_NUML statt LED_SCROLLL (kein Firmware-Bug) | Siehe RGB-Abschnitt |
 | VIA zeigt Layer 1+ als Müll | `via.json`-Matrix (12 Zeilen) wich von echter `MATRIX_ROWS` (14) ab | Gelöst - siehe VIA-Abschnitt |
 | VIA verbindet nicht ("All retries failed") | Vermutlich App-seitiger Verbindungscache | Behob sich nach Reboot |
+
+## 🔓 Was noch offen ist / weitere Möglichkeiten
+Bewusst nicht (weiter) verfolgt oder unbestätigt - kein akuter Handlungsbedarf,
+aber hier für die nächste Session festgehalten:
+
+- **Physische Zuordnung der WS2812-Kettenpositionen 1-5 unbekannt.** Nur
+  Position 0 (Capslock, rot) wurde visuell bestätigt. Es ist unklar, welche
+  physische LED auf der Platine welcher Kettenposition entspricht - z. B.
+  gibt es unterhalb von PgDn eine LED, die in der originalen Vial-Firmware
+  eine Lauflicht-/Animationsfunktion zeigt (vermutlich Teil des
+  `RGBLIGHT`-Default-Animationsmodus auf den Underglow-Positionen 2-5).
+  Wer die komplette Kette durchmappen will: `ws2812_set_color(i, 255,0,0)`
+  einzeln für `i=0..5` in `keyboard_post_init_kb()` testen, oder einfacher
+  über VIA/Raw-HID, sobald `via.json` eine Lighting-Menu-Definition hat.
+- **RGB-Underglow (Position 2-5) läuft hardware-seitig sauber (PWM-Fix),
+  aber Farben/Animation wurden nie bewusst angeschaut/eingestellt** -
+  bisher nur "aus" (Boot-Default) und Capslock-Rot getestet. Modus/Farbe/
+  Helligkeit lassen sich über QMKs Standard-`RGBLIGHT`-Tastenkombinationen
+  einstellen (falls im Keymap gebunden) oder per Raw-HID.
+- **VIA-Lighting-Tab ist leer** (`via.json`s `"menus": []`) - RGB-Einstellungen
+  sind aktuell nur über Firmware-seitige Keycodes/Raw-HID erreichbar, nicht
+  über VIAs GUI-Slider. Bei Bedarf: `via.json` um eine
+  `qmk_rgblight`-Menu-Definition ergänzen (Standard-QMK-Feature, siehe
+  VIA-Doku "Lighting Menus").
+- **PB14/PA8-GPIO-Fallback zeigt keine bestätigte Wirkung** - Code ist als
+  harmloser Vendor-kompatibler Fallback belassen (siehe `matrix.c`), könnte
+  bei Gelegenheit sauber isoliert getestet werden (WS2812 kurz deaktivieren,
+  nur GPIO toggeln) oder als toter Code entfernt werden.
+- **Scrolllock-LED (Host-Kernel-Quirk, LED_NUML statt LED_SCROLLL) bewusst
+  nicht weiterverfolgt** - auf Nutzerwunsch, da Scroll Lock nicht verwendet
+  wird.
+- **`is_ver5020`/`has_extra_pullup`-Autodetection nie explizit geloggt** -
+  Matrix funktioniert einwandfrei, aber welchen Zweig dieses konkrete Board
+  tatsächlich nimmt, wurde nie über z. B. `CONSOLE_ENABLE`+`print()` verifiziert.
+- **RGBLIGHT_LIMIT_VAL=50** 1:1 vom Vendor übernommen, nie gegen den
+  tatsächlichen USB-Port dieses Rechners gemessen/validiert.
 
 ## 🧠 Erweiterung
 - SPI1 (PA5/6/7) → FRAM, Flash, OLED
