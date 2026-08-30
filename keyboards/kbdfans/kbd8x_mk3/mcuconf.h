@@ -122,7 +122,12 @@
  * PWM driver system settings.
  */
 #define STM32_PWM_USE_ADVANCED              FALSE
-#define STM32_PWM_USE_TIM1                  FALSE
+// TIM1 CH3N (PB15, no remap needed) drives the WS2812 chain via the
+// hardware PWM+DMA driver - see WS2812_DI_PIN in config.h and
+// WS2812_DRIVER=pwm in rules.mk. Replaces the bitbang driver, whose
+// software-timed pulses were suspected (never confirmed) to be
+// out-of-spec at this board's 48MHz HSI-only SYSCLK.
+#define STM32_PWM_USE_TIM1                  TRUE
 #define STM32_PWM_USE_TIM2                  FALSE
 #define STM32_PWM_USE_TIM3                  FALSE
 #define STM32_PWM_USE_TIM4                  FALSE

@@ -34,12 +34,33 @@
 // matching the reference implementation's style.
 
 
-// RGB-Underglow (WS2812) - disabled (RGBLIGHT_ENABLE=no), see rules.mk and
-// README.md for the open WS2812-timing-at-48MHz LED issue.
+// RGB-Kette (WS2812): 4 Underglow-LEDs + 2 Indicator-Positionen (Caps/Scroll,
+// siehe Vendor-Referenz kbd8xmk3_vial/config.h: RGBLED_NUM=4,
+// PHY_INDICATOR_NUM=2). Hardware-PWM+DMA-Treiber (WS2812_DRIVER=pwm in
+// rules.mk) statt Bitbang, siehe README.md RGB-Abschnitt.
 #define WS2812_DI_PIN B15
-// optional: #define RGBLIGHT_LED_COUNT 16
-// optional: #define RGBLIGHT_SLEEP
-// RGBLIGHT_* Steps kannst du bei Bedarf wieder setzen
+#define RGBLIGHT_LED_COUNT 6
+#define RGBLIGHT_LIMIT_VAL 50
+
+// Chain-Positionen 0/1 sind per RGBLIGHT_LAYERS als feste Caps/Scroll-
+// Indicator-Overlays reserviert (siehe led_update_kb() in matrix.c);
+// Position 2-5 bleiben normales Underglow. Nur 2 Layer nötig -> spart RAM
+// gegenüber dem RGBLIGHT_MAX_LAYERS-Default von 8.
+#define RGBLIGHT_LAYERS
+#define RGBLIGHT_MAX_LAYERS 2
+// Ohne dieses Flag rendert QMK Layer-Overlays nur, wenn der globale
+// RGB-Schalter (rgblight_config.enable) an ist - Caps/Scroll-Indicator
+// soll aber unabhängig vom RGB-Modus (aktuell aus) sichtbar sein.
+#define RGBLIGHT_LAYERS_OVERRIDE_RGB_OFF
+
+// PB15 = TIM1_CH3N (Default-AF, kein Remap nötig). TIM1_UP-DMA-Request ist
+// auf STM32F103 fest auf DMA1 Channel 5 verdrahtet, unabhängig vom
+// gewählten Kanal.
+#define WS2812_PWM_DRIVER PWMD1
+#define WS2812_PWM_CHANNEL 3
+#define WS2812_PWM_COMPLEMENTARY_OUTPUT
+#define WS2812_PWM_DMA_STREAM STM32_DMA1_STREAM5
+#define WS2812_PWM_DMA_CHANNEL 5
 
 // Debounce
 #define DEBOUNCE 5

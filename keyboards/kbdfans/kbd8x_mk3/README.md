@@ -57,40 +57,78 @@ Das Board bootet danach automatisch neu (kein manueller Power-Cycle nötig).
 
 ## 💡 VIA
 - VIA aktiviert (`VIA_ENABLE = yes`, `users/neo/rules.mk`).
+  `VIA_PROTOCOL_VERSION = 0x000C` (12, QMK-Default aus `quantum/via.h`).
 - Vial ist **nicht** konfiguriert (kein `VIAL_ENABLE`, kein `vial.json`).
 - Lokale VIA-Definition liegt in `via.json` (manuell in der VIA-App laden,
-  Design-Tab → Load Draft Definition - das Board ist nicht im offiziellen
+  Design-Tab → Load Draft Definition, dann im Configure-Tab auf
+  "Authorize Device" klicken - das Board ist nicht im offiziellen
   VIA-Katalog registriert). Struktur wurde gegen `keyboard.json` verifiziert
   (Matrixpositionen 1:1 deckungsgleich).
+- `via.json` nutzt das **v3-Schema** (`menus: []`, `firmwareVersion: 0`,
+  kein `lighting`-Feld mehr) - ab `VIA_PROTOCOL_VERSION` 11+ verlangt die
+  aktuelle usevia.app-Version zwingend eine v3-Definition; die alte
+  `lighting: "none"`-basierte v2-Datei wurde deshalb von VIA abgelehnt
+  ("Fetching v3 definition failed"), unabhängig davon, welche Version man
+  im Datei-Upload-Dialog manuell auswählt.
 
-## 🌈 RGB / Status-LEDs — bekanntes offenes Problem
+**Status (Stand 2026-08-30): verbindet und funktioniert.** Die
+Verbindung selbst lief nach einem Reboot sauber an - der zuvor vermutete
+Raw-HID-"off-by-one"-Bug in der Firmware war offenbar kein reproduzierbarer
+Firmware-Fehler (eher ein VIA-/App-seitiger Verbindungs-Cache-Zustand, der
+sich durch den Reboot gelöst hat).
+
+**Bug gefunden & gefixt: Layer 1-11 zeigten in VIA Müll, nur Layer 0 war
+korrekt.** Ursache war ein Mismatch zwischen `via.json`s `"matrix"`-Feld
+(`rows: 12`) und der echten Firmware-`MATRIX_ROWS` (14, siehe `config.h` -
+die Kettenlänge des seriellen Scans, nicht die Anzahl belegter Zeilen).
+VIAs `DYNAMIC_KEYMAP_GET_BUFFER`-Aufruf berechnet den Byte-Offset pro
+Layer aus *seiner eigenen* `matrix`-Angabe, während die Firmware
+(`quantum/dynamic_keymap.c`) intern strikt mit dem kompilierten
+`MATRIX_ROWS`×`MATRIX_COLS` als Stride im EEPROM/Wear-Leveling-Speicher
+arbeitet. Bei 12 vs. 14 Zeilen driftet der Offset pro Layer um
+(14-12)×8×2 = 32 Byte auseinander - Layer 0 (Offset 0) blieb dadurch
+zufällig korrekt, jeder folgende Layer war zunehmend verschoben. Fix:
+`via.json`s `"matrix"` auf `{"rows": 14, "cols": 8}` gesetzt (das
+`"layout"`-Array mit den physischen Tastenpositionen 0-11 bleibt
+unverändert). Reiner VIA-Definitions-Fix, kein Firmware-Rebuild/Flash
+nötig - einfach die Draft Definition in VIA neu laden.
+
+## 🌈 RGB / Status-LEDs
 | Parameter | Wert |
 |:--|:--|
-| RGB_DI_PIN | PB15 (WS2812) |
-| Kette | 6 LEDs: 2 Capslock/Scroll-Indikatoren + 4 Underglow (per realer Vendor-Firmware: `PHY_INDICATOR_NUM=2`, `RGBLED_NUM=4`) |
-| RGBLIGHT_ENABLE | `yes` (nur damit der ws2812-Treiber gelinkt wird) |
-| RGBLIGHT_DEFAULT_ON | `false` |
+| WS2812_DI_PIN | PB15 = TIM1_CH3N (Default-AF, kein Remap) |
+| WS2812_DRIVER | `pwm` (Hardware-PWM+DMA, siehe unten) |
+| Kette | 6 LEDs: 2 Capslock/Scroll-Indikatoren (Position 0/1) + 4 Underglow (Position 2-5), per realer Vendor-Firmware: `PHY_INDICATOR_NUM=2`, `RGBLED_NUM=4` |
+| RGBLIGHT_LAYERS | 2 Layer (Caps=rot @0, Scroll=blau @1), `RGBLIGHT_LAYERS_OVERRIDE_RGB_OFF` gesetzt |
+| RGBLIGHT_ENABLE | `yes` |
 
-**Status (Stand 2026-08-30): ungelöst.** Die beiden Indikator-LEDs
-(Capslock-Bereich, links-unten + rechts-oben am Switch, plus eine dritte
-Status-LED oben rechts nahe Druck-Taste) sind Teil der WS2812-Kette, nicht
-einfache GPIO-LEDs - Umpolen von PB14/PA8 änderte nur die angezeigte Farbe
-(weiß → rot), nicht den An/Aus-Zustand, was zu Restdaten im
-Schieberegister statt echtem GPIO-Effekt passt. Ein expliziter
-`ws2812_set_color_all(0,0,0)` + `ws2812_flush()` in
-`keyboard_post_init_kb()` (matrix.c) sollte die Kette leeren, hat aber
-stattdessen alle drei LEDs hell weiß gezeigt statt sie auszuschalten.
+**Status (Stand 2026-08-30): Capslock-Indicator funktioniert, Underglow
+läuft sauber.** Root Cause für die alten "LEDs bleiben an/weiß"-Symptome
+war der QMK-Standard-WS2812-**Bitbang**-Treiber, dessen NOP-Timing-Schleife
+auf diesem Board (48 MHz HSI-only SYSCLK statt der für STM32F103-Boards
+üblichen 72 MHz) offenbar nicht sauber lief - Details/Verifikation dazu
+nicht mehr rekonstruierbar, der Wechsel auf den **Hardware-PWM+DMA-Treiber**
+(TIM1 CH3N, taktunabhängig da timer-getaktet statt NOP-Loop-getaktet) hat
+das Problem behoben: die Kette geht jetzt deterministisch sauber auf Schwarz.
 
-**Arbeitshypothese:** QMKs Standard-WS2812-Bitbang-Treiber ist vermutlich
-auf die für STM32F103-Boards übliche 72 MHz-Taktrate kalibriert; dieses
-Board läuft aber bei 48 MHz (siehe oben, HSI-bedingt) - die Pulsbreiten im
-Treiber dürften dadurch außerhalb der WS2812-Spezifikation liegen, was die
-LEDs als "an/hell" statt "aus" interpretieren lässt. Die reale
-Vendor-Firmware hat eine eigene, vermutlich für 48 MHz kalibrierte
-ws2812-Implementierung (nicht übernommen). Nächster Schritt: Timing-Loop
-des QMK-Treibers gegen die tatsächliche `STM32_SYSCLK` prüfen/kalibrieren,
-oder alternative Clock-Konfiguration (72 MHz SYSCLK + USBPRE_DIV1P5 für
-weiterhin 48 MHz USB) evaluieren.
+Indicator-Implementierung: Caps/Scroll werden als `RGBLIGHT_LAYERS`-Overlay
+auf Kettenposition 0/1 umgesetzt (`matrix.c`, `led_update_kb()` +
+`keyboard_post_init_kb()`), nicht wie in der Vendor-Referenz über direkte
+GPIO-Pins (PB14/PA8) - letztere sind hier nur redundant als Fallback belassen
+(vendor-Polarität on=HIGH übernommen), zeigten aber empirisch keine
+Wirkung. Wichtiger QMK-Kern-Stolperstein dabei: `RGBLIGHT_LAYERS`-Overlays
+rendern standardmäßig nur, wenn der globale `rgblight_config.enable`
+(RGB-Hauptschalter) an ist - `RGBLIGHT_LAYERS_OVERRIDE_RGB_OFF` in config.h
+hebt das auf, damit der Indicator unabhängig vom RGB-Modus sichtbar ist.
+
+**Scrolllock-LED reagiert nicht - aber das ist kein Firmware-Bug.**
+`evtest` auf dem Keyboard-Event-Device zeigt einen sauberen
+`KEY_SCROLLLOCK`-Press/Release von der Firmware, aber der zugehörige
+`EV_LED`-Report vom Kernel ist `LED_NUML`, nicht `LED_SCROLLL` - der
+Host toggelt beim Scrolllock-Tastendruck also aus irgendeinem
+Grund die Numlock-LED-Bit statt der Scrolllock-LED-Bit (Linux-VT-
+Tastaturschicht, nicht QMK). Da derselbe Indicator-Code-Pfad für Capslock
+nachweislich funktioniert, ist die Firmware-Seite hier nicht die Ursache.
 
 ## 🧰 Fehlerbehebung
 | Problem | Ursache | Lösung |
@@ -99,7 +137,10 @@ weiterhin 48 MHz USB) evaluieren.
 | Tasten falsch/verschoben | Argument-Count-Mismatch in `ff_tkl_iso_kbd8x_mk3.h` | Physische Tastenzahl pro Zeile (`keyboard.json`) gegen die vom Formfactor gelieferte Argumentzahl prüfen |
 | Bootloader nicht erkannt | `1209:db42` fehlt in `lsusb` | Board neu in Bootloader versetzen, USB-Berechtigung prüfen (`/etc/udev/rules.d/`) |
 | Board bleibt nach Flash im Bootloader | Selten, aber möglich | USB-Kabel einmal aus-/wieder einstecken |
-| Status-LEDs falsch/permanent an | WS2812-Timing bei 48 MHz (siehe RGB-Abschnitt) | Ungelöst - siehe oben |
+| Status-LEDs falsch/permanent an | WS2812-Bitbang-Treiber lief bei 48 MHz nicht sauber | Gelöst - PWM+DMA-Treiber, siehe RGB-Abschnitt |
+| Scrolllock-LED reagiert nicht | Host toggelt LED_NUML statt LED_SCROLLL (kein Firmware-Bug) | Siehe RGB-Abschnitt |
+| VIA zeigt Layer 1+ als Müll | `via.json`-Matrix (12 Zeilen) wich von echter `MATRIX_ROWS` (14) ab | Gelöst - siehe VIA-Abschnitt |
+| VIA verbindet nicht ("All retries failed") | Vermutlich App-seitiger Verbindungscache | Behob sich nach Reboot |
 
 ## 🧠 Erweiterung
 - SPI1 (PA5/6/7) → FRAM, Flash, OLED

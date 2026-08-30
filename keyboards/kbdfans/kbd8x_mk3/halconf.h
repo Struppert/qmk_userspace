@@ -48,7 +48,7 @@
 #define HAL_USE_MAC        FALSE
 #endif
 #ifndef HAL_USE_PWM
-#define HAL_USE_PWM        FALSE
+#define HAL_USE_PWM        TRUE   // WS2812 chain (TIM1 PWM+DMA, see mcuconf.h)
 #endif
 #ifndef HAL_USE_RTC
 #define HAL_USE_RTC        FALSE

@@ -26,17 +26,14 @@ BOARD_MK := platforms/chibios/boards/$(BOARD)/board/board.mk
 # white then red - that's uninitialized WS2812 shift-register data, not a
 # GPIO on/off effect).
 #
-# Tried RGBLIGHT_ENABLE=yes + an explicit ws2812_set_color_all(0,0,0) in
-# keyboard_post_init_kb() (matrix.c) to force a clean all-off frame - made
-# it WORSE (all 3 LEDs on the chain went bright white instead of off).
-# Working hypothesis: QMK's stock ws2812 bitbang driver is timed for the
-# 72 MHz clock most STM32F103 QMK boards run at; this board runs HSI-only
-# at 48 MHz (see mcuconf.h - no external crystal), so the driver's pulse
-# widths are very likely out of WS2812 spec, and garbled data reads back
-# as "on/white" instead of "off". Needs driver-timing investigation
-# (see README.md RGB section) - reverted to =no for now so at least only
-# the one pre-existing stale LED stays lit instead of all three.
-RGBLIGHT_ENABLE   = no
+# Was RGBLIGHT_ENABLE=no with the bitbang WS2812 driver (garbled/stuck
+# colors, see README.md RGB section for the full history). Switched to
+# the hardware PWM+DMA driver (WS2812_DRIVER=pwm below, TIM1 CH3N on
+# PB15) since it derives its timing from the timer's own tick count
+# rather than compiler-generated NOP loops, making it far less sensitive
+# to this board's non-standard 48 MHz HSI-only SYSCLK.
+RGBLIGHT_ENABLE   = yes
+WS2812_DRIVER     = pwm
 BACKLIGHT_ENABLE  = no
 AUDIO_ENABLE      = no
 COMMAND_ENABLE    = yes

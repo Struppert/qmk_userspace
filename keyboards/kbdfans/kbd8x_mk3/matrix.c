@@ -22,9 +22,14 @@
 
 #include "quantum.h"
 #include <string.h>
-// ws2812.h only available when RGBLIGHT_ENABLE pulls the driver in - see
-// the #if 0'd keyboard_post_init_kb() below and README.md "RGB /
-// Status-LEDs" for context. Re-add `#include "ws2812.h"` when resuming.
+
+// Caps/Scroll-Indicator als RGBLIGHT-Layer auf WS2812-Kettenposition 0/1
+// (siehe README.md "RGB / Status-LEDs" - Positionen 2-5 bleiben normales
+// Underglow). Ersetzt den alten direkten ws2812_set_color_all()-Ansatz,
+// der mit dem 48MHz-Bitbang-Timing nicht sauber lief.
+const rgblight_segment_t PROGMEM caps_indicator[]   = RGBLIGHT_LAYER_SEGMENTS({0, 1, HSV_RED});
+const rgblight_segment_t PROGMEM scroll_indicator[] = RGBLIGHT_LAYER_SEGMENTS({1, 1, HSV_BLUE});
+const rgblight_segment_t *const PROGMEM rgb_indicator_layers[] = RGBLIGHT_LAYERS_LIST(caps_indicator, scroll_indicator);
 
 // Global matrix buffers - defined in keymap.c to ensure keymap_introspection.o can link
 extern matrix_row_t raw_matrix[MATRIX_ROWS];
@@ -149,38 +154,33 @@ bool matrix_scan_custom(matrix_row_t out[MATRIX_ROWS]) {
     return changed;
 }
 
-// caps_led (PB14) / scroll_led (PA8) reflect the host's actual lock state.
-// Reference firmware's single_color_indicator_set(): on = palSetPad (HIGH),
-// off = palClearPad (LOW) - same polarity used here.
+// caps_led (PB14) / scroll_led (PA8): kept as a redundant simple-GPIO path
+// matching the vendor reference's single_color_indicator_set() (on=HIGH,
+// off=LOW) in case this board revision has them wired as real GPIO LEDs
+// alongside the WS2812 chain (some do, see is_sc_leds_mcu in the vendor
+// source) - but the actual, confirmed-working indicator is the RGBLIGHT
+// layer below (chain positions 0/1). Empirically, toggling these GPIOs
+// alone previously showed no clean on/off effect.
 bool led_update_kb(led_t led_state) {
     if (led_state.caps_lock) {
-        palClearPad(GPIOB, 14);
-    } else {
         palSetPad(GPIOB, 14);
+    } else {
+        palClearPad(GPIOB, 14);
     }
     if (led_state.scroll_lock) {
-        palClearPad(GPIOA, 8);
-    } else {
         palSetPad(GPIOA, 8);
+    } else {
+        palClearPad(GPIOA, 8);
     }
-    return false;
+    rgblight_set_layer_state(0, led_state.caps_lock);
+    rgblight_set_layer_state(1, led_state.scroll_lock);
+    return led_update_user(led_state);
 }
 
-// TODO (LED investigation, see README.md "RGB / Status-LEDs"): with
-// RGBLIGHT_ENABLE=yes this was meant to force an all-off frame onto the
-// WS2812 chain after every other subsystem's startup, but instead made
-// all 3 chain LEDs go bright white - working theory is the stock ws2812
-// bitbang driver's pulse timing assumes 72MHz and this board runs HSI-only
-// at 48MHz. Left disabled (#if 0) until that's resolved; RGBLIGHT_ENABLE is
-// back to "no" in rules.mk so this doesn't even compile right now.
-#if 0
 void keyboard_post_init_kb(void) {
-    ws2812_init();
-    ws2812_set_color_all(0, 0, 0);
-    ws2812_flush();
+    rgblight_layers = rgb_indicator_layers;
     keyboard_post_init_user();
 }
-#endif
 
 // Matrix helper function - required by suspend.c and keyboard.c
 // MUST be a real function, not inline or macro, to avoid ARM/Thumb linker conflicts

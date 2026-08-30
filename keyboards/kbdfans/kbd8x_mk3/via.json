@@ -2,11 +2,12 @@
   "name": "KBD8X MK3 STM32 (ISO)",
   "vendorId": "0x9D5B",
   "productId": "0x2303",
-  "lighting": "none",
+  "firmwareVersion": 0,
   "matrix": {
-    "rows": 12,
+    "rows": 14,
     "cols": 8
   },
+  "menus": [],
   "layouts": {
     "keymap": [
       [
