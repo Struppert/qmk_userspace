@@ -68,7 +68,7 @@ gegengeprüft):
 | Capslock | `[2,7]` | `TD(TD_CAPS_SYS_LEAD)` - Tap→`KC_ESC`, Hold→Layer `_SYS` (kein `KC_CAPS`!) |
 | Druck/PrtScn | `[10,0]` | `KC_PSCR` |
 | Scroll Lock | `[11,4]` | `KC_NO` (unbelegt - keine der `*_ROW0`-Makros vergibt hier `KC_SCRL`) |
-| Pause | `[11,5]` | `RM_NEXT` |
+| Pause | `[11,5]` | `UG_TOGG` (war `RM_NEXT` - totes RGB_MATRIX-Keycode). Switch war defekt, seit 2026-08-31 getauscht und funktioniert, siehe RGB-Abschnitt |
 
 Capslock sendet also standardmäßig **kein** `KC_CAPS` - das ist Absicht
 (User-Preference, Capslock gilt als "unnötigster Key", daher Tap-Dance-
@@ -124,6 +124,28 @@ nötig - einfach die Draft Definition in VIA neu laden.
 | RGBLIGHT_LAYERS | 2 Layer (Caps=rot @0, Scroll=blau @1), `RGBLIGHT_LAYERS_OVERRIDE_RGB_OFF` gesetzt, `RGBLIGHT_MAX_LAYERS 2` (RAM-Sparen ggü. Default 8) |
 | RGBLIGHT_ENABLE | `yes` |
 | RGBLIGHT_LIMIT_VAL | `50` (Sicherheits-Obergrenze für Helligkeit/Stromaufnahme, 1:1 vom Vendor-Wert übernommen, nicht selbst gegen den USB-Port gemessen) |
+| RGBLIGHT_DEFAULT_ON | bewusst nicht gesetzt (QMK-Default `true`) - die wandernde Underglow-Animation ist gewünscht |
+
+**Status (Stand 2026-08-31): Kette lief dauerhaft an/animiert - kein Bug,
+sondern gewünscht, aber es gab keine Möglichkeit sie abzuschalten.**
+`RM_NEXT` (letzte Taste der F-Reihe, fix auf allen Ebenen) war
+`QK_RGB_MATRIX_MODE_NEXT` - ein **RGB_MATRIX**-Keycode auf einem Board, das
+nur `RGBLIGHT_ENABLE=yes` hat (`RGB_MATRIX_ENABLE=no`). Die Taste war also
+von Anfang an wirkungslos - es gab dadurch **keine** erreichbare
+Möglichkeit, die Kette per Tastendruck an-/auszuschalten. Auf `UG_TOGG`
+(den tatsächlichen RGBLIGHT-Toggle) umgestellt
+(`users/neo/formfactors/ff_tkl_iso_kbd8x_mk3.h`), zusätzlich auch direkt auf
+der `_SYS`-Ebene gebunden (rechte Hand, direkt vor Backspace - bewusst
+nicht neben `EE_CLR`) (lokaler Override von
+`SYS60_ROW1` in `keymap.c`, siehe BELEGUNG.md). Für Modus/Farbe/Helligkeit
+jetzt auch VIAs Lighting-Tab nutzbar (`via.json`: `"menus": ["qmk_rgblight"]`
+- vorher leer, siehe "Was noch offen ist" unten, jetzt erledigt).
+
+**Nachtrag (behoben):** Die F-Reihen-Position von `UG_TOGG` (Matrix
+`[11,5]`, Pause-Taste) hatte zunächst keinen Tastendruck registriert -
+Ursache war ein defekter Switch (zusammen mit F12/`[10,5]`, per
+Vendor-Firmware-Vergleich bestätigt), seit 2026-08-31 getauscht und
+funktioniert. Details siehe "Was noch offen ist" unten.
 
 **Status (Stand 2026-08-30): Capslock-Indicator funktioniert, Kette geht
 sauber auf Schwarz.** Root Cause für die alten "LEDs bleiben an/weiß"-Symptome
@@ -188,6 +210,9 @@ Nützliche Kommandos (`quantum/via.h`):
 | Scrolllock-LED reagiert nicht | Host toggelt LED_NUML statt LED_SCROLLL (kein Firmware-Bug) | Siehe RGB-Abschnitt |
 | VIA zeigt Layer 1+ als Müll | `via.json`-Matrix (12 Zeilen) wich von echter `MATRIX_ROWS` (14) ab | Gelöst - siehe VIA-Abschnitt |
 | VIA verbindet nicht ("All retries failed") | Vermutlich App-seitiger Verbindungscache | Behob sich nach Reboot |
+| Neu geflashter Keycode wirkt nicht, obwohl `keymap.c` ihn korrekt zeigt | VIAs EEPROM-Gültigkeitsprüfung basiert nur auf Kalenderdatum (`QMK_BUILDDATE`), nicht Uhrzeit - zweiter Reflash am selben Tag löst keinen `dynamic_keymap_reset()` mehr aus, EEPROM bleibt auf dem Stand des ersten Flashes des Tages. `EE_CLR` behebt das NICHT (anderer EEPROM-Bereich) | `id_dynamic_keymap_reset` (Raw-HID `0x06`) explizit senden, siehe Abschnitt Raw-HID-Scripting |
+| Einzelne Taste tut nichts, obwohl Keycode korrekt im EEPROM steht | War bei F12/`[10,5]` und Pause/`[11,5]` der Fall - defekte Switches (Hardware, per Vendor-Firmware-Test gegengeprüft), inzwischen getauscht und funktionieren wieder | Zur Diagnose bei anderen Tasten: per Raw-HID auf Test-Keycode umbiegen, mit `evtest` auf dem `-event-kbd`-Node gegenprüfen, ob ein Press/Release-Event ankommt; im Zweifel Original-Vendor-Firmware flashen (`~/Downloads/ydkb_kbdfans_kbd8xmk3_vial.uf2`) um Firmware- von Hardware-Ursachen zu trennen |
+| `EE_CLR` gedrückt, danach fehlen VIA-Makros/Keymap-Anpassungen | `EE_CLR` formatiert auf diesem Board (wear-leveling-EEPROM) das **komplette** EEPROM (`eeprom_driver_format()`), nicht nur den allgemeinen `eeconfig`-Bereich - VIAs Dynamic-Keymap UND alle Makros sind danach weg | Makros vor jedem `EE_CLR`/Reflash-Test sichern (`tools/via_macros.py export`), siehe Raw-HID-Scripting-Abschnitt |
 
 ## 🔓 Was noch offen ist / weitere Möglichkeiten
 Bewusst nicht (weiter) verfolgt oder unbestätigt - kein akuter Handlungsbedarf,
@@ -201,17 +226,8 @@ aber hier für die nächste Session festgehalten:
   `RGBLIGHT`-Default-Animationsmodus auf den Underglow-Positionen 2-5).
   Wer die komplette Kette durchmappen will: `ws2812_set_color(i, 255,0,0)`
   einzeln für `i=0..5` in `keyboard_post_init_kb()` testen, oder einfacher
-  über VIA/Raw-HID, sobald `via.json` eine Lighting-Menu-Definition hat.
-- **RGB-Underglow (Position 2-5) läuft hardware-seitig sauber (PWM-Fix),
-  aber Farben/Animation wurden nie bewusst angeschaut/eingestellt** -
-  bisher nur "aus" (Boot-Default) und Capslock-Rot getestet. Modus/Farbe/
-  Helligkeit lassen sich über QMKs Standard-`RGBLIGHT`-Tastenkombinationen
-  einstellen (falls im Keymap gebunden) oder per Raw-HID.
-- **VIA-Lighting-Tab ist leer** (`via.json`s `"menus": []`) - RGB-Einstellungen
-  sind aktuell nur über Firmware-seitige Keycodes/Raw-HID erreichbar, nicht
-  über VIAs GUI-Slider. Bei Bedarf: `via.json` um eine
-  `qmk_rgblight`-Menu-Definition ergänzen (Standard-QMK-Feature, siehe
-  VIA-Doku "Lighting Menus").
+  über VIAs Lighting-Tab (`via.json` hat inzwischen die `qmk_rgblight`-Menu-
+  Definition, siehe RGB-Abschnitt).
 - **PB14/PA8-GPIO-Fallback zeigt keine bestätigte Wirkung** - Code ist als
   harmloser Vendor-kompatibler Fallback belassen (siehe `matrix.c`), könnte
   bei Gelegenheit sauber isoliert getestet werden (WS2812 kurz deaktivieren,

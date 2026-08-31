@@ -42,6 +42,12 @@
 #define RGBLIGHT_LED_COUNT 6
 #define RGBLIGHT_LIMIT_VAL 50
 
+// RGBLIGHT_DEFAULT_ON bewusst NICHT gesetzt (Default bleibt QMKs eigener
+// Wert, true) - die laufende Underglow-Animation ist gewünscht, nicht ein
+// Bug. Der frühere Fehler war nicht der Default, sondern dass es gar keine
+// erreichbare Taste gab, um die Kette bei Bedarf abzuschalten (siehe
+// UG_TOGG unten und in keymap.c/ff_tkl_iso_kbd8x_mk3.h).
+
 // Chain-Positionen 0/1 sind per RGBLIGHT_LAYERS als feste Caps/Scroll-
 // Indicator-Overlays reserviert (siehe led_update_kb() in matrix.c);
 // Position 2-5 bleiben normales Underglow. Nur 2 Layer nötig -> spart RAM

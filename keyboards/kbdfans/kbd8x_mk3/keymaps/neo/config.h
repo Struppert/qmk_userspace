@@ -17,10 +17,14 @@
 #endif
 #define WEAR_LEVELING_LOGICAL_SIZE (4 * 1024)
 
+// 11, nicht 12 - keymaps[] hat kein [_RGB] mehr (kein RGB_MATRIX auf diesem
+// Board, siehe keymap.c). Muss mit der tatsächlichen Array-Größe
+// übereinstimmen - sonst genau der gleiche Offset-Bug wie beim
+// MATRIX_ROWS/via.json-Mismatch, siehe README.md, Abschnitt VIA.
 #ifdef DYNAMIC_KEYMAP_LAYER_COUNT
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
 #endif
-#define DYNAMIC_KEYMAP_LAYER_COUNT 12
+#define DYNAMIC_KEYMAP_LAYER_COUNT 11
 
 #ifdef DYNAMIC_KEYMAP_MACRO_COUNT
 #undef DYNAMIC_KEYMAP_MACRO_COUNT

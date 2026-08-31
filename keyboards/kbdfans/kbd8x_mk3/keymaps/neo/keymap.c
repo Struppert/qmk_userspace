@@ -10,8 +10,27 @@
 #include "layouts/neoqwertz60.h"
 #include "layouts/noted60.h"
 #include "layouts/qwertz60.h"
-#include "layouts/rgb60.h"
 #include "layouts/sys60.h"
+
+// kbd8x_mk3 hat kein RGB_MATRIX (nur RGBLIGHT, siehe users/neo/rules.mk) -
+// die geteilte _RGB-Ebene (layouts/rgb60.h) wäre hier komplett wirkungslos
+// und wird deshalb unten gar nicht erst ins keymaps[]-Array aufgenommen.
+// Die FN-Taste, die dort normalerweise hinführt (RGB_MO), zeigt sonst auf
+// einen Layer-Index, den dieses Board nicht mehr definiert - lokal (nur in
+// dieser Datei) auf KC_NO umgebogen, ohne layouts/fn60.h für andere Boards
+// anzufassen.
+#undef FN60_ROW4
+#define FN60_ROW4  KC_LSFT, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, SYS_MO, KC_NO, KC_HOME, KC_PGDN, KC_PGUP, KC_RSFT,
+
+// UG_TOGG (RGBLIGHT an/aus, siehe formfactors/ff_tkl_iso_kbd8x_mk3.h) auch
+// direkt auf der _SYS-Ebene erreichbar - rechte Hand, neben Backspace
+// (nicht neben EE_CLR, um ein versehentliches EEPROM-Löschen beim Tippen
+// nicht durch eine Nachbartaste noch wahrscheinlicher zu machen).
+// Zusätzlich zur F-Reihe-Position, die layerübergreifend sowieso überall
+// gilt. SYS60_ROW1 ist geteilt (layouts/sys60.h) - lokaler Override statt
+// die Datei für andere Boards anzufassen.
+#undef SYS60_ROW1
+#define SYS60_ROW1  KC_ESC, QK_BOOT, EE_CLR, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, UG_TOGG, KC_BSPC,
 
 // TKL-Formfaktor (KBD8X) + Bottom-Row-Picker
 #include "formfactors/ff_tkl_iso_kbd8x_mk3.h"
@@ -68,17 +87,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_NOTED4]      = KEYMAP_TKL_ISO_KBD8X(NOTED4_60,     (BR8_POS_1_3_4_5_8(NOTED4_60,     KC_LGUI, KC_RGUI, QK_LEAD))),
     [_FN]          = KEYMAP_TKL_ISO_KBD8X(FN60,          (BR8_POS_1_3_4_5_8(FN60,          KC_LGUI, KC_RGUI, QK_LEAD))),
     [_SYS]         = KEYMAP_TKL_ISO_KBD8X(SYS60,         (BR8_POS_1_3_4_5_8(SYS60,         KC_LGUI, KC_RGUI, QK_LEAD))),
-    [_RGB]         = KEYMAP_TKL_ISO_KBD8X(RGB60,         (BR8_POS_1_3_4_5_8(RGB60,         KC_LGUI, KC_RGUI, QK_LEAD))),
+    // kein [_RGB] hier - siehe Kommentar beim FN60_ROW4-Override oben.
 };
 // clang-format on
 
 #include "tap_dance_bindings.inc"
 
-bool dip_switch_update_user(uint8_t index, bool active) {
-  if (index == 0) {
-    // Konvention: active == Mac-Stellung
-    default_layer_set(1UL << (active ? _NEOQWERTZ1 : _QWERTZ));
-    return false; // Event verarbeitet
-  }
-  return true;
-}
+// Kein physischer DIP-Schalter auf diesem Board (und DIP_SWITCH_ENABLE ist
+// für kbd8x_mk3 nirgends gesetzt) - Default-Layer-Wahl läuft ausschließlich
+// über die DF(...)-Tasten auf der _SYS-Ebene, siehe BELEGUNG.md.

@@ -18,8 +18,13 @@ a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,
 #define ROW3_DROP_ENT(...) ROW3_DROP_ENT_(__VA_ARGS__)
 
 // ── F-Row (KBD8X): 16 Tasten inkl. DEL + MUTE am Ende
+// Letzte Taste war RM_NEXT (QK_RGB_MATRIX_MODE_NEXT) - totes RGB_MATRIX-
+// Keycode auf einem Board mit RGB_MATRIX_ENABLE=no (nur RGBLIGHT). Auf
+// UG_TOGG (RGBLIGHT-Toggle, tatsächlich funktionsfähig) umgestellt - vorher
+// gab es keine einzige erreichbare Taste, um die WS2812-Kette an/aus zu
+// schalten.
 #define KBD8X_FROW0_DEFAULT \
-KC_ESC, F_ROW_BASE, KC_PSCR,  KC_NO,    RM_NEXT,
+KC_ESC, F_ROW_BASE, KC_PSCR,  KC_NO,    UG_TOGG,
 
 // ── F-Row (KBD8X) – FN/Alt-Belegung (bereinigt)
 #define KBD8X_FROW0_FN \

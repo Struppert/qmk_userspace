@@ -7,7 +7,7 @@
     "rows": 14,
     "cols": 8
   },
-  "menus": [],
+  "menus": ["qmk_rgblight"],
   "layouts": {
     "keymap": [
       [

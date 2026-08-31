@@ -15,8 +15,17 @@ typedef struct {
   uint16_t next;
 } TEdge;
 
-static TNode g_nodes[512];  // enough for ~200 entries (adjust if needed)
-static TEdge g_edges[1024]; // edges
+// Sized via -D on constrained boards (see users/neo/rules.mk) so the
+// static RAM cost matches the actual table instead of always paying for
+// the full ~130-entry one - kbd8x_mk3 only has ~3K headroom total.
+#ifndef LEADER_TRIE_MAX_NODES
+#define LEADER_TRIE_MAX_NODES 512 // enough for ~200 entries (adjust if needed)
+#endif
+#ifndef LEADER_TRIE_MAX_EDGES
+#define LEADER_TRIE_MAX_EDGES 1024
+#endif
+static TNode g_nodes[LEADER_TRIE_MAX_NODES];
+static TEdge g_edges[LEADER_TRIE_MAX_EDGES];
 static uint16_t g_node_count = 0;
 static uint16_t g_edge_count = 0;
 

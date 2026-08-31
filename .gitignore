@@ -27,3 +27,7 @@ Thumbs.db
 __pycache__/
 *.pyc
 *.pyo
+
+# VIA-Makro-Backups (tools/via_macros.py export) - persönlicher Inhalt,
+# nicht fürs Repo bestimmt
+*_macros_backup*.json

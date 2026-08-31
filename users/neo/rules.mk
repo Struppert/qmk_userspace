@@ -38,12 +38,23 @@ COMMAND_ENABLE  = no
 ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   RGB_MATRIX_ENABLE = yes
   LEADER_ENABLE = yes
+  # leader.c (the real leader_start_user/leader_end_user glue) is only
+  # compiled for these boards - LEADER_WIRED tells tap_dance_impl.c that
+  # calling leader_start() on a double-tap actually leads somewhere.
+  OPT_DEFS += -DLEADER_WIRED
   DYNAMIC_MACRO_ENABLE = yes
   TAP_DANCE_ENABLE = yes
   COMBO_ENABLE = yes
   KEYMAP_INTROSPECTION_ENABLE = yes
 else
   RGB_MATRIX_ENABLE = no
+  # LEADER_ENABLE stays on (QK_LEAD keycode + process_leader.c must still
+  # compile). By default leader.c isn't in SRC below, so leader_start_user/
+  # leader_end_user fall back to QMK's weak no-op stubs - a double-tap
+  # would silently enter a dead leader capture that times out doing
+  # nothing. LEADER_WIRED (left undefined here) tells tap_dance_impl.c to
+  # skip that branch and just fall through to normal tap/hold behavior.
+  # kbd8x_mk3 overrides this below with a real (but reduced) leader.
   LEADER_ENABLE = yes
   DYNAMIC_MACRO_ENABLE = no
   # TAP_DANCE and COMBO must stay enabled for stub arrays!
@@ -51,6 +62,19 @@ else
   COMBO_ENABLE = no
   KEYMAP_INTROSPECTION_ENABLE = no
   VIA_ENABLE = yes
+endif
+
+# kbd8x_mk3 only (NOT bella - its ATmega32u4 only has 2.5K RAM total, no
+# room for this): a real but reduced leader, rg + fzf groups only. Base
+# build leaves ~3K RAM headroom (measured: 17408/20480 used); the generic
+# trie in leader/trie.c costs 512*8 + 1024*4 = 8K at its default sizing
+# (currently 0 because it's gc-sections'd away while unreferenced - once
+# leader.c below makes leader_module_start() reachable, that 8K becomes
+# real and blows the budget), so its arrays are shrunk to fit a ~23-entry
+# table (measured trie shape: ~29 nodes/28 edges) with margin to spare.
+ifeq ($(KEYBOARD),kbdfans/kbd8x_mk3)
+  OPT_DEFS += -DLEADER_WIRED
+  OPT_DEFS += -DLEADER_TRIE_MAX_NODES=64 -DLEADER_TRIE_MAX_EDGES=64
 endif
 
 # Large source files (leader, intents) only for non-memory-constrained keyboards
@@ -90,4 +114,19 @@ else
          leader/leader.c \
          leader/trie.c \
          tap_dance_impl.c
+  ifeq ($(KEYBOARD),kbdfans/kbd8x_mk3)
+    # Real leader wiring, rg + fzf only - leader/table_min.c instead of
+    # leader/table.c (which needs git/wezterm/zoxide/yazi/zellij/sed
+    # handlers this board has no RAM budget for). Never add table.c here
+    # too - both define leader_table[]/leader_table_count().
+    SRC += leader.c \
+           leader/os_shell.c \
+           leader/help.c \
+           leader/handlers_os_shell.c \
+           leader/handlers_ctx.c \
+           leader/handlers_rg.c \
+           leader/handlers_fzf.c \
+           leader/intents_rg_fzf.c \
+           leader/table_min.c
+  endif
 endif

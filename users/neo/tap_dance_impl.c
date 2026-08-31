@@ -18,7 +18,7 @@
   /* Test A / Leader */
   void td_test_finished(tap_dance_state_t *s, void *ud) {
     (void)ud;
-    #ifdef LEADER_ENABLE
+    #if defined(LEADER_ENABLE) && defined(LEADER_WIRED)
       if (td_wants_leader(s)) { leader_start(); reset_tap_dance(s); return; }
     #endif
     tap_code16(KC_A);
@@ -29,7 +29,7 @@
   static bool td_caps_sys_on = false;
   void td_caps_sys_finished(tap_dance_state_t *s, void *ud) {
     (void)ud;
-    #ifdef LEADER_ENABLE
+    #if defined(LEADER_ENABLE) && defined(LEADER_WIRED)
       if (td_wants_leader(s)) { leader_start(); reset_tap_dance(s); return; }
     #endif
     if (s->pressed) { layer_on(_SYS); td_caps_sys_on = true; }
@@ -44,7 +44,7 @@
   static bool td_caps_neo_on = false;
   void td_caps_neo_finished(tap_dance_state_t *s, void *ud) {
     (void)ud;
-    #ifdef LEADER_ENABLE
+    #if defined(LEADER_ENABLE) && defined(LEADER_WIRED)
       if (td_wants_leader(s)) { leader_start(); reset_tap_dance(s); return; }
     #endif
     if (s->pressed) { layer_on(_NEOQWERTZ3); td_caps_neo_on = true; }
@@ -59,7 +59,7 @@
   static bool td_caps_noted_on = false;
   void td_caps_noted_finished(tap_dance_state_t *s, void *ud) {
     (void)ud;
-    #ifdef LEADER_ENABLE
+    #if defined(LEADER_ENABLE) && defined(LEADER_WIRED)
       if (td_wants_leader(s)) { leader_start(); reset_tap_dance(s); return; }
     #endif
     if (s->pressed) { layer_on(_NOTED3); td_caps_noted_on = true; }
@@ -74,7 +74,7 @@
   static bool td_neo_l3mo_on = false;
   void td_neo_l3mo_finished(tap_dance_state_t *s, void *ud) {
     (void)ud;
-    #ifdef LEADER_ENABLE
+    #if defined(LEADER_ENABLE) && defined(LEADER_WIRED)
       if (td_wants_leader(s)) { leader_start(); reset_tap_dance(s); return; }
     #endif
     if (s->pressed) { layer_on(_NEOQWERTZ3); td_neo_l3mo_on = true; }
@@ -88,7 +88,7 @@
   static bool td_noted_l3mo_on = false;
   void td_noted_l3mo_finished(tap_dance_state_t *s, void *ud) {
     (void)ud;
-    #ifdef LEADER_ENABLE
+    #if defined(LEADER_ENABLE) && defined(LEADER_WIRED)
       if (td_wants_leader(s)) { leader_start(); reset_tap_dance(s); return; }
     #endif
     if (s->pressed) { layer_on(_NOTED3); td_noted_l3mo_on = true; }
