@@ -50,6 +50,14 @@
 #include "layouts/rgb60.h"
 #include "layouts/sys60.h"
 
+// BT-Host-Wahl (BT_HST1-3/P2P4G) und Akkustand (BAT_LVL) direkt auf _SYS
+// statt nur über die verschachtelte _WIN_FN-Ebene (die weiterhin zusätzlich
+// über MO(_WIN_FN) an der LWin-Position erreichbar bleibt, siehe unten) -
+// SYS60_ROW2 ist geteilt (layouts/sys60.h), daher lokaler Override statt
+// die Datei für andere Boards anzufassen.
+#undef SYS60_ROW2
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, KC_NO, KC_NO, KC_NO, KC_NO,
+
 // 75%-Formfaktor (V1) + Bottom-Row-Picker
 #include "formfactors/ff_75_iso_v1.h"
 #include "formfactors/row5_pick.h"
