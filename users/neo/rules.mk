@@ -64,17 +64,41 @@ else
   VIA_ENABLE = yes
 endif
 
+# kbd8x_mk3 only (NOT bella - its ATmega32u4 has no room for any of this):
+# close the remaining gap to full Keychron-board parity. These were all
+# cut for the same now-corrected ~3K RAM estimate as the leader table
+# (see README.md RAM-Budget). combos_bindings.inc is already #included
+# from keymap.c (the F+J->Leader combo was compiled as a dead stub
+# without COMBO_ENABLE); keymap_logic.c (tap/hold tuning for
+# L3_ESC_NEO/SYS_ESC/SP_FN etc.) was never compiled in at all - those
+# keys have been running on QMK's default weak-stub tap/hold behavior,
+# not the tuned one Q3/V3 get.
+ifeq ($(KEYBOARD),kbdfans/kbd8x_mk3)
+  UNICODE_ENABLE = yes
+  NKRO_ENABLE = yes
+  # DYNAMIC_MACRO_ENABLE left off: its macro_buffer[] costs 2560B RAM
+  # (DYNAMIC_MACRO_SIZE=256) for a volatile (non-EEPROM) DM_REC1/DM_PLY1
+  # macro system that overlaps VIA's own dynamic keymap macros (12 slots,
+  # EEPROM-persistent via wear_leveling, already active) - not worth the
+  # budget on this board. See README.md RAM-Budget for the measured
+  # tradeoff (6% vs 35% free).
+  COMBO_ENABLE = yes
+  KEYMAP_INTROSPECTION_ENABLE = yes
+  SRC += keymap_logic.c
+endif
+
 # kbd8x_mk3 only (NOT bella - its ATmega32u4 only has 2.5K RAM total, no
-# room for this): a real but reduced leader, rg + fzf groups only. Base
-# build leaves ~3K RAM headroom (measured: 17408/20480 used); the generic
-# trie in leader/trie.c costs 512*8 + 1024*4 = 8K at its default sizing
-# (currently 0 because it's gc-sections'd away while unreferenced - once
-# leader.c below makes leader_module_start() reachable, that 8K becomes
-# real and blows the budget), so its arrays are shrunk to fit a ~23-entry
-# table (measured trie shape: ~29 nodes/28 edges) with margin to spare.
+# room for this): full leader table (see README.md RAM-Budget section -
+# the ~3K headroom this used to be sized against was wrong, it double-
+# counted the ChibiOS linker script's always-fills-to-RAM-end .heap
+# section, which nothing here ever calls malloc() into; real headroom is
+# ~9.1K). Full leader_table[] (138 entries, all groups) needs exactly
+# 160 nodes/159 edges = 1916B (measured via a trie-build simulation over
+# the real LENTRY sequences, not guessed); sized to 224/224 = 2688B for
+# growth margin.
 ifeq ($(KEYBOARD),kbdfans/kbd8x_mk3)
   OPT_DEFS += -DLEADER_WIRED
-  OPT_DEFS += -DLEADER_TRIE_MAX_NODES=64 -DLEADER_TRIE_MAX_EDGES=64
+  OPT_DEFS += -DLEADER_TRIE_MAX_NODES=224 -DLEADER_TRIE_MAX_EDGES=224
 endif
 
 # Large source files (leader, intents) only for non-memory-constrained keyboards
@@ -115,18 +139,27 @@ else
          leader/trie.c \
          tap_dance_impl.c
   ifeq ($(KEYBOARD),kbdfans/kbd8x_mk3)
-    # Real leader wiring, rg + fzf only - leader/table_min.c instead of
-    # leader/table.c (which needs git/wezterm/zoxide/yazi/zellij/sed
-    # handlers this board has no RAM budget for). Never add table.c here
-    # too - both define leader_table[]/leader_table_count().
+    # Full leader wiring (see README.md RAM-Budget + LEADER_TRIE_MAX_NODES/
+    # EDGES above for why this now fits) - leader/table.c, not table_min.c.
+    # Never add both - they both define leader_table[]/leader_table_count().
     SRC += leader.c \
            leader/os_shell.c \
            leader/help.c \
+           leader/table.c \
+           leader/intents_wezterm.c \
+           leader/intents_dev.c \
+           leader/intents_rg_fzf.c \
+           leader/intents_fs.c \
+           leader/intents_zellij.c \
+           leader/intents_sed.c \
            leader/handlers_os_shell.c \
-           leader/handlers_ctx.c \
+           leader/handlers_wezterm.c \
+           leader/handlers_git.c \
            leader/handlers_rg.c \
            leader/handlers_fzf.c \
-           leader/intents_rg_fzf.c \
-           leader/table_min.c
+           leader/handlers_fs.c \
+           leader/handlers_zellij.c \
+           leader/handlers_ctx.c \
+           leader/handlers_sed.c
   endif
 endif

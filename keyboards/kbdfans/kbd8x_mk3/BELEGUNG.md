@@ -91,21 +91,89 @@ und rechtem Strg) - auf jeder unteren Reihe unten identisch platziert.
 Sequenz innerhalb von 500 ms tippen (`LEADER_TIMEOUT`,
 `LEADER_PER_KEY_TIMING`, `keymaps/neo/config.h`).
 
-Reduzierter Satz (RAM-bedingt, siehe `users/neo/leader/table_min.c`) - nur
-**rg** und **fzf**, kein Git/WezTerm/zoxide/yazi/zellij/sed wie auf den
-Keychron-Boards:
+Volle Tabelle (`users/neo/leader/table.c`, 138 Einträge - identisch zu den
+Keychron-Boards, siehe `README.md` RAM-Budget für die Messung, warum das
+jetzt passt):
 
 | Sequenz | Aktion |
 |:--|:--|
+| `H H` | Gruppenübersicht |
 | `A A` | Selbsttest: tippt "LEADER OK" |
-| `F H` | Kontexthilfe fzf-Gruppe |
+
+**OS** (`O` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `O H` | Hilfe OS |
+| `O W` | OS = Windows |
+| `O L` | OS = Linux |
+| `O M` | OS = macOS |
+| `O C` | OS zyklisch |
+| `O P` | OS in App tippen |
+
+**WezTerm Tabs** (`T` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `T H` | Hilfe Tabs |
+| `T` | WezTerm öffnen |
+| `T N` | Neuer Tab |
+| `T C` | Tab schließen |
+| `T 1`…`T 9` | Tab 1–9 |
+
+**WezTerm Panes** (`P` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `P H` | Hilfe Panes |
+| `P S` | Split horizontal |
+| `P V` | Split vertikal |
+| `P X` | Pane schließen |
+| `P N` | Nächstes Pane |
+| `P P` | Vorheriges Pane |
+
+**Git** (`G` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `G H` | Hilfe Git |
+| `G S` | `git status` |
+| `G A` | `git add -A` |
+| `G D` | `git diff` |
+| `G D S` | `git diff --staged` |
+| `G C` | `commit -m ""` |
+| `G C F` / `G C B` / `G C R` / `G C T` / `G C D` | commit fix:/feat:/refactor:/test:/docs: |
+| `G P` | `git push` |
+| `G P 1` | `push --set-upstream` |
+| `G P 9` | `push --tags` |
+| `G P !` | `push --force-with-lease` ⚠️ (`LFLAG_DANGEROUS`) |
+| `G L` | log kompakt |
+| `G L A` | log all graph |
+| `G B N` / `G B S` / `G B D` | `switch -c <name>` / `switch -` / `branch -D <name>` |
+| `G R` | `rebase -i HEAD~` |
+| `G T N` / `G T P` | `tag -a v…` / `push --tags` |
+| `G G` | `git grep -n -I -e …` |
+| `G G I` / `G G W` / `G G L` / `G G F` / `G G P` | grep -i/-w/-l / `\| fzf \| nvim` / `… -- <paths>` |
+| `G P S` / `G P G` | `log -S …` / `log -G …` (`--patch --stat`) |
+| `G F F` | `git ls-files \| fzf` |
+
+**fzf** (`F` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `F H` | Hilfe fzf |
 | `F F` | `fzf` |
 | `F E` | Auswahl → `$EDITOR` |
 | `F P` | Preview mit `bat` |
 | `F O` | Dateien mit Preview → Editor |
 | `F M` | Multi-Select → Editor |
 | `F D` | Verzeichnis → `cd` |
-| `R H` | Kontexthilfe rg-Gruppe |
+
+**ripgrep** (`R` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `R H` | Hilfe rg |
 | `R R` | `rg` Basis |
 | `R S` | `-S` smart case |
 | `R A` | `git ls-files \| rg` |
@@ -116,6 +184,58 @@ Keychron-Boards:
 | `R C A` / `R C U` / `R C D` | Kontext `-C 3` / `-B 3` / `-A 3` |
 | `R M` | `-U` multiline |
 | `R T C` / `R T R` / `R T G` | Dateitypen cpp/rust/go |
+
+**zoxide** (`Z` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `Z H` | Hilfe zoxide |
+| `Z Z` | `z "…"` |
+| `Z I` | `zi` |
+| `Z A` | `zoxide add` |
+| `Z L` | `zoxide query -l` |
+| `Z T` | `zoxide query -t` |
+| `Z R` | `zoxide remove` |
+| `Z F` | `zoxide \| fzf` → `cd` |
+| `Z N` | `nvim $(zoxide query -i)` |
+
+**yazi** (`Y` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `Y H` | Hilfe yazi |
+| `Y Y` | `yazi` |
+| `Y Z` | `yazi $(zoxide)` |
+| `Y G` | yazi Git-Root |
+| `Y F` | yazi mit Datei-/Pfadliste |
+
+**zellij** (`J` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `J H` | Hilfe zellij |
+| `J J` | `attach -c main` |
+| `J L` | `list-sessions` |
+| `J A` | `attach <name>` |
+| `J K` | `kill-session <name>` |
+| `J S R` | `rename-session <name>` |
+| `J T N` / `J T P` / `J T X` / `J T R` / `J T L` | new-tab / prev / close / rename / `--layout <file>` |
+| `J T 1`…`J T 9` | go-to-tab 1–9 |
+| `J P H` / `J P V` / `J P F` / `J P X` | split right/down, floating pane, close pane |
+| `J F H` / `J F L` / `J F K` / `J F J` | focus left/right/up/down |
+| `J R H` / `J R L` / `J R K` / `J R J` | resize left/right/up/down |
+| `J O F` / `J O E` / `J O U` / `J O B` | toggle floating/embed/fullscreen/frames |
+
+**sed** (`S` + `H` für Hilfe)
+
+| Sequenz | Aktion |
+|:--|:--|
+| `S` | sed: help group |
+| `S H` | `sed --help` |
+| `S R` | replace template |
+| `S F` | filter lines by pattern |
+| `S E` | `echo text \| sed ...` |
+| `S Z` | `fzf` → sed pattern |
 
 ## 🔒 Fixe Bereiche (auf allen 11 Layern identisch)
 
@@ -228,15 +348,17 @@ Reihe 5 (Leertastenreihe, 8 Tasten inkl. Leader).
 ### Ebene 9 — `_FN`
 | Reihe 1 | `Esc` `F1` … `F12` `Del` |
 |:--|:--|
-| **Reihe 2** | `Tab` `Macro6` `Macro4` `Macro2` `Macro0` ⚠`DM_PLY1` `(frei)` ⚠`DM_REC1` ⚠`DM_REC2` ⚠`DM_RSTP` `(frei)` `Macro10` `Macro8` |
-| **Reihe 3** | `Esc` `Macro7` `Macro5` `Macro3` `Macro1` ⚠`DM_PLY2` `Left` `Down` `Up` `Right` `(frei)` `Macro11` `Macro9` |
+| **Reihe 2** | `Tab` `Macro6` `Macro4` `Macro2` `Macro0` `(frei)` `(frei)` `(frei)` `(frei)` `(frei)` `(frei)` `Macro10` `Macro8` |
+| **Reihe 3** | `Esc` `Macro7` `Macro5` `Macro3` `Macro1` `(frei)` `Left` `Down` `Up` `Right` `(frei)` `Macro11` `Macro9` |
 | **Reihe 4** | `LShift` `(frei)` ×5 `(frei)` `SYS_MO` `(frei)` `Home` `PgDn` `PgUp` `RShift` |
 | **Reihe 5** | `LCtrl` `LWin` `LAlt` `[Leertaste]` `(frei)` `RWin` `QK_LEAD` `RCtrl` |
 
 `Macro0`-`Macro11` = `QK_MACRO_0`…`QK_MACRO_11` (VIA-Makro-Tab, funktioniert
-- `VIA_ENABLE=yes`). ⚠ = **Dynamic-Macro-Tasten (`DM_*`) sind auf kbd8x_mk3
-nicht funktionsfähig** (`DYNAMIC_MACRO_ENABLE=no`, RAM-Sparen laut
-`users/neo/rules.mk`) - Tastendruck bleibt wirkungslos.
+- `VIA_ENABLE=yes`). Die QMK-eigenen Dynamic-Macro-Tasten (`DM_REC1/2`,
+`DM_PLY1/2`, `DM_RSTP`) sind auf kbd8x_mk3 aus `users/neo/layouts/fn60.h`
+entfernt (fallen auf `KC_NO` zurück, `#ifdef DYNAMIC_MACRO_ENABLE` -
+dieses Board hat das Feature aus, siehe `README.md` RAM-Budget). Auf
+Q3/V3 (`DYNAMIC_MACRO_ENABLE=yes`) bleiben dieselben Positionen aktiv.
 
 Reihe-4-Position 7 ist auf anderen Boards `RGB_MO` (→ `_RGB`) - auf
 kbd8x_mk3 lokal auf `(frei)` (`KC_NO`) umgebogen, siehe Layer-Übersicht
@@ -246,8 +368,8 @@ oben.
 | Reihe 1 | `Esc` `QK_BOOT` `EE_CLR` `(frei)` ×9 `UG_TOGG` `Bksp` |
 |:--|:--|
 | **Reihe 2** | `Tab` `DF(_QWERTZ)` `DF(_NEOQWERTZ1)` `DF(_NOTED1)` `(frei)` ×9 |
-| **Reihe 3** | ⚠`KC_CAPS` ⚠`UC_MODE_CYCLE` ⚠`UC_SET_LNX` ⚠`UC_SET_WIN` ⚠`UC_SET_WINC` `(frei)` ×8 |
-| **Reihe 4** | `LShift` ⚠`KC_OS_CYCLE` ⚠`KC_OS_WIN` ⚠`KC_OS_LNX` ⚠`KC_OS_MAC` `(frei)` ×7 `RShift` |
+| **Reihe 3** | `KC_CAPS` `UC_MODE_CYCLE` `UC_SET_LNX` `UC_SET_WIN` `UC_SET_WINC` `(frei)` ×8 |
+| **Reihe 4** | `LShift` `KC_OS_CYCLE` `KC_OS_WIN` `KC_OS_LNX` `KC_OS_MAC` `(frei)` ×7 `RShift` |
 | **Reihe 5** | `LCtrl` `LWin` `LAlt` `[Leertaste]` `(frei)` `RWin` `QK_LEAD` `RCtrl` |
 
 `UG_TOGG` (RGBLIGHT an/aus, Reihe 1 Position 13, rechte Hand direkt vor
@@ -258,14 +380,19 @@ erreichbaren Position auf der F-Reihe (siehe oben), hier explizit neben
 Helligkeit) laufen über VIAs Lighting-Tab (`via.json`, `qmk_rgblight`-Menü),
 nicht über eigene Keycodes.
 
-⚠ **Diese acht Tasten sind auf kbd8x_mk3 aktuell tot.** Sie werden in
-`process_record_user()` (`users/neo/keymap_logic.c`) behandelt - diese Datei
-ist für kbd8x_mk3 nicht in `SRC` (`users/neo/rules.mk`), also greift QMKs
-leerer Weak-Default-Stub und die Tasten senden nichts. Funktioniert dagegen
-normal: `QK_BOOT` (Bootloader), `EE_CLR` (EEPROM löschen), `UG_TOGG`
-(RGBLIGHT-Toggle - reine QMK-Kernfunktion), alle drei
-`DF(...)`-Tasten (Default-Layer wechseln - reine QMK-Kernfunktion, kein
-Hook nötig).
+`UC_MODE_CYCLE`/`UC_SET_LNX`/`UC_SET_WIN`/`UC_SET_WINC` und
+`KC_OS_CYCLE`/`KC_OS_WIN`/`KC_OS_LNX`/`KC_OS_MAC` (7 Tasten) laufen über
+`process_record_user()` in `users/neo/keymap_logic.c` - diese Datei steht
+für kbd8x_mk3 in `SRC` (`users/neo/rules.mk`, kbd8x_mk3-spezifischer
+Block) und ist im aktuellen Build verlinkt (per `nm` gegen
+`.build/kbdfans_kbd8x_mk3_neo.elf` verifiziert: `process_record_user`,
+`os_cycle`, `uc_set_and_feedback` vorhanden) - funktionieren also normal.
+`KC_CAPS` war nie an diese Datei gebunden (reiner QMK-Kern-Keycode, kommt
+in `keymap_logic.c`s `switch` gar nicht vor) und funktioniert unabhängig
+davon immer. Ebenso immer funktionsfähig: `QK_BOOT` (Bootloader),
+`EE_CLR` (EEPROM löschen), `UG_TOGG` (RGBLIGHT-Toggle), alle drei
+`DF(...)`-Tasten (Default-Layer wechseln) - reine QMK-Kernfunktionen,
+kein Hook nötig.
 
 ### (Keine Ebene 11 — `_RGB`)
 

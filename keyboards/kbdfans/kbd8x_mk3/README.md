@@ -10,7 +10,84 @@ bzw. nie getippt hat.
 
 - MCU: **STM32F103CBT6** (Medium Density, 128 KB Flash / 20 KB SRAM) - NICHT
   die "xE"-Variante (512 KB/64 KB), die früher hier fälschlich angenommen
-  wurde. RAM ist entsprechend knapp bemessen (~17.4 KB von 20 KB genutzt).
+  wurde.
+- **RAM-Budget (verifiziert 2026-09-03, neo-Keymap, `.build/kbdfans_kbd8x_mk3_neo.elf`):**
+  `arm-none-eabi-size` meldete für den ursprünglichen (reduzierten) Build
+  `.data`+`.bss` = 17404 / 20480 Byte (~85%, ≈2,6 KB "frei"). Das zählt
+  aber vier separate NOBITS-Sektionen zusammen - per `readelf -S`:
+  ```
+  [ 1] .mstack   NOBITS  20000c00  000400   (1024)
+  [ 2] .pstack   NOBITS  20001000  000800   (2048)
+  [ 8] .bss      NOBITS  20001ca8  001b98   (7064)
+  [25] .heap     NOBITS  20003840  0017c0   (6080)
+  ```
+  1024+2048+7064+6080 = 16216, exakt `size`s "bss"-Zahl. Die 6080-Byte
+  `.heap`-Sektion ist aber keine feste Reservierung - laut Kommentar im
+  ChibiOS-Sourcecode selbst
+  (`lib/chibios/os/common/startup/ARMCMx/compilers/GCC/ld/rules_memory.ld:309`):
+  *"The default heap uses the (statically) unused part of a RAM
+  section."* `__heap_end__` ist per Linkerscript-Definition exakt das
+  Ende der `ram0`-Region - der Bereich ist wörtlich "was übrig bleibt",
+  keine Belegung. Und: `arm-none-eabi-nm` auf dem .elf zeigt kein
+  `malloc`, `calloc`, `realloc` oder `_sbrk` verlinkt - im ganzen
+  Firmware-Image ruft nichts den Heap auf, also wird davon kein Byte je
+  beschrieben.
+
+  **Wichtige zweite Korrektur:** Der Nenner ist nicht 20480 (physische
+  Chipgröße), sondern **17408 Byte**. `MCU_LDSCRIPT=STM32F103CB` definiert
+  `ram0` explizit als `org = 0x20000000 + 0xC00, len = 20k - 0xC00` (siehe
+  `keyboards/kbdfans/kbd8x_mk3/ld/STM32F103CB.ld`) - die untersten 3072
+  Byte SRAM sind für den UniCore-F1-Bootloader-Handoff reserviert und der
+  Anwendung strukturell nicht zugänglich (siehe Commit `63da307`: ohne
+  diesen Puffer crasht der Bootloader-Jump). `.mstack`+`.pstack`+`.data`+
+  `.bss`+`.heap` summieren sich in jedem gemessenen Build exakt auf
+  17404-17408 - das bestätigt den echten Pool rechnerisch.
+
+  Der Leader-Trie (`leader/trie.c`, `g_nodes`/`g_edges`) wurde mit
+  exaktem Nachbau des Build-Algorithmus (Python-Simulation über die
+  echten `LENTRY`-Sequenzen) durchgerechnet, nicht geschätzt: der
+  damals reduzierte Satz (`table_min.c`, 23 Einträge, nur rg+fzf)
+  brauchte 30 Knoten/29 Kanten = 356 Byte; die volle Tabelle
+  (`table.c`, 138 Einträge, inkl. Git/WezTerm/zoxide/yazi/zellij/sed)
+  braucht 160 Knoten/159 Kanten = 1916 Byte - nicht die ursprünglich
+  angenommenen 8 KB (generische Default-Größe
+  `LEADER_TRIE_MAX_NODES=512/EDGES=1024`, nie die tatsächlich benötigte).
+
+  **Vier gemessene Ausbaustufen** (`users/neo/rules.mk`), jeweils
+  `.mstack`(1024) + `.pstack`(2048) fix, Rest gemessen:
+
+  | Stufe | `.data` | `.bss` | `.heap` (=frei) | frei / 17408 |
+  |---|---|---|---|---|
+  | 1. Ursprung (`table_min.c`, nur rg+fzf) | 1188 | 7064 | 6080 | 34,9% |
+  | 2. Volle Leader-Tabelle (`table.c`, 138 Einträge, `TRIE=224/224`) | 1188 | 8984 | 4160 | 23,9% |
+  | 3. + Unicode/NKRO/Combo/Introspection/`keymap_logic.c`/`DYNAMIC_MACRO_ENABLE` | 1288 | 11760 | 1288 | 7,4% |
+  | 4. **Final** - wie 3, aber `DYNAMIC_MACRO_ENABLE` wieder aus | 1280 | 9200 | **3856** | **22,2%** |
+
+  Stufe 3→4: `DYNAMIC_MACRO_ENABLE`s `macro_buffer[]`
+  (`DYNAMIC_MACRO_SIZE=256`) kostete allein 2560 Byte - für QMKs eigenes,
+  flüchtiges (nicht EEPROM-persistentes) `DM_REC1`/`DM_PLY1`-Makrosystem,
+  das sich mit VIAs Dynamic-Keymap-Macros (12 Slots, EEPROM-persistent
+  via `wear_leveling`, weiterhin aktiv) funktional überschneidet - auf
+  Nutzerentscheidung deaktiviert gelassen, um das Polster zu behalten.
+
+  Als Konsequenz sind die fünf `DM_*`-Tasten (`DM_REC1/2`, `DM_PLY1/2`,
+  `DM_RSTP`) auf der `_FN`-Ebene entfernt (`users/neo/layouts/fn60.h`,
+  `FN60_DM_*`-Makros: `#ifdef DYNAMIC_MACRO_ENABLE` → echter Keycode,
+  sonst `KC_NO`) statt als toter, wirkungsloser Keycode auf der Tastatur
+  liegen zu bleiben - Q3/V3 behalten dort ihre funktionierenden Bindings,
+  da die gemeinsame Layout-Datei board-abhängig verzweigt. Details siehe
+  `BELEGUNG.md`, Ebene 9 (`_FN`). RAM/Flash unverändert (Keycode-Wahl an
+  toten Positionen kostet nichts) - erneut verifiziert:
+  `.data`=1280, `.bss`=16128 (`size`-Summe, identisch zu Stufe 4 oben).
+
+  Flash (Stufe 4): 53908+1280 = 55188 / ~112640 Byte nutzbar (128K minus
+  16K Bootloader) ≈ **49%**.
+
+  **Fazit: kein Chip-/Daughterboard-Tausch nötig**, aber das Polster ist
+  nach voller Q3/V3-Feature-Parität knapper als in Stufe 1/2 (22% statt
+  35-45% frei) - vor jedem weiteren Feature-Zuwachs (mehr Leader-Einträge,
+  mehr Layer, größere RGB-Puffer) erneut `arm-none-eabi-size`/`readelf -S`
+  prüfen, nicht annehmen.
 - Takt: **HSI intern** (kein externer Quarz vorhanden), 4 MHz PLL-Eingang ×
   PLLMUL 12 = 48 MHz SYSCLK, USB direkt bei 48 MHz (kein USBPRE-Teiler
   nötig). Eine HSE-Konfiguration hängt beim Booten für immer (kein Quarz
