@@ -24,7 +24,16 @@
 #ifdef DYNAMIC_KEYMAP_LAYER_COUNT
 #undef DYNAMIC_KEYMAP_LAYER_COUNT
 #endif
+// Mit TETRIS_GAME_ENABLE wächst keymaps[] um [_TETRIS] (Index 12) - die
+// Array-Größe (höchster benutzter Index + 1) ist dann 13, auch wenn
+// [_RGB] (Index 11, dazwischen) weiterhin keinen eigenen Eintrag hat -
+// zählt als impliziter Nur-KC_NO-Layer, verletzt die Größenregel oben
+// also nicht.
+#ifdef TETRIS_GAME_ENABLE
+#define DYNAMIC_KEYMAP_LAYER_COUNT 13
+#else
 #define DYNAMIC_KEYMAP_LAYER_COUNT 11
+#endif
 
 #ifdef DYNAMIC_KEYMAP_MACRO_COUNT
 #undef DYNAMIC_KEYMAP_MACRO_COUNT

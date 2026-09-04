@@ -36,8 +36,22 @@
 #include "formfactors/ff_tkl_iso_kbd8x_mk3.h"
 #include "formfactors/row5_pick.h"
 
+#ifdef TETRIS_GAME_ENABLE
+#include "layouts/tetris60.h"
+#include "tetris.h"
+#endif
+
 // Combos (oder Stub, oder aus wenn COMBO_ENABLE=no)
 #include "combos_bindings.inc"
+
+#ifdef TETRIS_GAME_ENABLE
+#define TETRIS_ENTRY TG(_TETRIS)
+#else
+#define TETRIS_ENTRY KC_NO
+#endif
+
+#undef SYS60_ROW2
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), TETRIS_ENTRY, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
 
 // Global matrix buffers - MUST be defined here for keymap_introspection.c to link
 matrix_row_t raw_matrix[MATRIX_ROWS] = {0};
@@ -88,6 +102,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_FN]          = KEYMAP_TKL_ISO_KBD8X(FN60,          (BR8_POS_1_3_4_5_8(FN60,          KC_LGUI, KC_RGUI, QK_LEAD))),
     [_SYS]         = KEYMAP_TKL_ISO_KBD8X(SYS60,         (BR8_POS_1_3_4_5_8(SYS60,         KC_LGUI, KC_RGUI, QK_LEAD))),
     // kein [_RGB] hier - siehe Kommentar beim FN60_ROW4-Override oben.
+#ifdef TETRIS_GAME_ENABLE
+    [_TETRIS]      = KEYMAP_TKL_ISO_KBD8X(TETRIS60,      (BR8_POS_1_3_4_5_8(TETRIS60,      KC_NO, KC_NO, KC_NO))),
+#endif
 };
 // clang-format on
 

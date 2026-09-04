@@ -27,6 +27,10 @@ aus `keymap_logic.c`.
 | 10 | `_SYS` | Momentary | `SYS_ESC`/Capslock-Tap-Dance halten, oder `SYS_MO` (auf `_FN`) |
 | 11 | `_RGB` | Momentary | `RGB_MO` (auf `_FN`) - **funktioniert hier tatsächlich**, dieses Board hat echtes `RGB_MATRIX` (anders als kbd8x_mk3) |
 | 12 | `_WIN_FN` | Momentary | `MO(_WIN_FN)` an der LWin-Position, nur während `_SYS`/`_RGB` gehalten wird - siehe eigener Abschnitt unten |
+| 13 | `_TETRIS` | Toggle | `TG(_TETRIS)` auf `_SYS` - **nur wenn beim Build `TETRIS_GAME_ENABLE=yes` gesetzt ist** (Default: aus) |
+
+Ebene 13 existiert nur in Sonder-Builds - Details siehe eigener Abschnitt
+unten und `TETRIS.md`.
 
 **Kein physischer DIP-Schalter** (`DIP_SWITCH_ENABLE` ist nirgends
 gesetzt) - `dip_switch_update_user()` in `keymap.c` ist totes,
@@ -54,6 +58,8 @@ nie aufgerufenes Boilerplate, wie beim kbd8x_mk3 vor der Bereinigung dort
 | `TD(TD_NOTED_L3MO_LEAD)` | – | `_NOTED3` |
 | `QK_LEAD` | Leader-Sequenz starten | – |
 | `DF(x)` | Default-Layer dauerhaft auf `x` setzen (EEPROM) | – |
+| `TG(_TETRIS)` | Ebene `_TETRIS` an/aus (Toggle) | – |
+| `TET_LEFT/RIGHT/DOWN/ROT/DROP` | Tetris-Steuerung (nur `_TETRIS`, nur `TETRIS_GAME_ENABLE=yes`) | – |
 | `BT_HST1/2/3` | Bluetooth-Host 1/2/3 wählen | – |
 | `P2P4G` | Auf 2.4G-Dongle-Modus wechseln | – |
 | `BAT_LVL` | Akkustand anzeigen (LED-Balken) | – |
@@ -124,7 +130,7 @@ Eintrag) oder `LEAD H H` am Gerät selbst tippen für die Live-Übersicht.
 `_NOTED1-4`) nutzen Farbton - siehe `encoder_map[]` in `keymap.c` für die
 genaue Zuordnung.
 
-## 🔒 Fixe Bereiche (auf allen 13 Layern identisch)
+## 🔒 Fixe Bereiche (auf allen 13 Layern identisch, inkl. `_TETRIS` falls aktiv)
 
 **F-Reihe (physische Reihe 0, 16 Tasten):**
 `KC_ESC · F1 · F2 · F3 · F4 · F5 · F6 · F7 · F8 · F9 · F10 · F11 · F12 · KC_DEL · KC_MUTE`
@@ -289,6 +295,23 @@ Quelle verifiziert (15,15,14,15,14,10 = 83, passt zu `LAYOUT_iso_83`):
 `BT_HST1-3`/`P2P4G`/`BAT_LVL` sind hier redundant zur neuen direkten
 `_SYS`-Bindung oben - bewusst nicht entfernt, falls die
 Zwei-Tasten-Kombination aus Gewohnheit weiterverwendet wird.
+
+### Ebene 13 — `_TETRIS` (nur `TETRIS_GAME_ENABLE=yes`)
+
+Eigenständiger Minispiel-Layer, rendert per HID-Keystrokes in ein
+PC-Terminal - siehe `TETRIS.md` für Build-Flag, PC-seitiges Setup
+(`stty raw -echo && cat` bzw. PowerShell-Äquivalent) und Spielstand.
+F-Reihe und Center-Spalte sind wie bei allen anderen Ebenen fix (siehe
+oben), Reihe 1/2/4 komplett `KC_NO`:
+
+| Reihe | Belegung |
+|:--|:--|
+| **Reihe 3** | `KC_NO` ×6 `TET_LEFT`(H) `TET_DOWN`(J) `TET_ROT`(K) `TET_RIGHT`(L) `KC_NO` ×4 |
+| **Reihe 5** | `KC_NO` `KC_NO` `KC_NO` `TET_DROP`(Leertaste) `KC_NO` `KC_NO` `KC_NO` |
+
+Vim-Bindung: `H`=links, `J`=runter (soft drop), `K`=rotieren, `L`=rechts,
+Leertaste=hard drop, `Esc`=Layer verlassen (`KC_ESC` wird in
+`process_record_user` abgefangen, solange `_TETRIS` aktiv ist).
 
 ## 📎 Legende: deutsche Sonderzeichen / Unicode
 

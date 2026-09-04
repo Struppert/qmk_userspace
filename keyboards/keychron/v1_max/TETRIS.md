@@ -1,10 +1,22 @@
 # Tetris-Layer (Prototyp)
 
-Hinter `TETRIS_GAME_ENABLE` (aus per Default). Baut mit:
+Hinter `TETRIS_GAME_ENABLE` (aus per Default). Portiert und mit
+`TETRIS_GAME_ENABLE=yes` kompiliert verifiziert auf:
 
-```
-qmk compile -kb keychron/v1_max/iso_encoder -km neo -e TETRIS_GAME_ENABLE=yes
-```
+| Board | Build-Befehl |
+|:--|:--|
+| V1 Max | `make keychron/v1_max/iso_encoder:neo QMK_USERSPACE=~/qmk_userspace TETRIS_GAME_ENABLE=yes` (Keychron-Fork nötig, siehe README.md) |
+| V1 | `make keychron/v1/iso_encoder:neo QMK_USERSPACE=~/qmk_userspace TETRIS_GAME_ENABLE=yes` (Keychron-Fork nötig) |
+| V3 | `make keychron/v3/iso_encoder:neo QMK_USERSPACE=~/qmk_userspace TETRIS_GAME_ENABLE=yes` (Keychron-Fork nötig) |
+| kbd8x_mk3 | `make kbdfans/kbd8x_mk3:neo QMK_USERSPACE=~/qmk_userspace TETRIS_GAME_ENABLE=yes` (Mainline-QMK, **kein** Keychron-Fork) |
+
+`users/neo/layouts/tetris60.h` ist board-übergreifend dieselbe Datei -
+alle vier Boards nutzen dasselbe `MAIN##_ROW1..4`-Row-Macro-Schema (75%
+V1-Familie und TKL V3/kbd8x_mk3 unterscheiden sich nur im umgebenden
+Formfaktor-Code, nicht in der Row-Struktur selbst). V1/V3 brauchten dafür
+zusätzlich zwei vorbestehende, Tetris-unabhängige Fixes (Encoder-Keycode-
+Umbenennung, `dip_switch_update_user`-Linker-Konflikt, RGB-Matrix-
+Compiler-Warnung als Fehler) - siehe Commit-History.
 
 Zugang: `TG(_TETRIS)` liegt auf `_SYS` (bislang freier Slot in Reihe 2).
 Bewegung vim-artig auf der Home Row: `H`=links, `J`=runter (soft drop),

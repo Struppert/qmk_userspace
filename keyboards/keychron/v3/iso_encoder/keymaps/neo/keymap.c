@@ -18,8 +18,22 @@
 #include "formfactors/ff_tkl_iso_v3.h"
 #include "formfactors/row5_pick.h"
 
+#ifdef TETRIS_GAME_ENABLE
+#include "layouts/tetris60.h"
+#include "tetris.h"
+#endif
+
 // Combos (oder Stub, oder aus wenn COMBO_ENABLE=no)
 #include "combos_bindings.inc"
+
+#ifdef TETRIS_GAME_ENABLE
+#define TETRIS_ENTRY TG(_TETRIS)
+#else
+#define TETRIS_ENTRY KC_NO
+#endif
+
+#undef SYS60_ROW2
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), TETRIS_ENTRY, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_QWERTZ]      = KEYMAP_TKL_ISO_V3(QWERTZ60,      (BR8_POS_1_3_4_5_8(QWERTZ60,      KC_LGUI, KC_RGUI, QK_LEAD))),
@@ -34,6 +48,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_FN]          = KEYMAP_TKL_ISO_V3(FN60,          (BR8_POS_1_3_4_5_8(FN60,          KC_LGUI, KC_RGUI, QK_LEAD))),
     [_SYS]         = KEYMAP_TKL_ISO_V3(SYS60,         (BR8_POS_1_3_4_5_8(SYS60,         KC_LGUI, KC_RGUI, QK_LEAD))),
     [_RGB]         = KEYMAP_TKL_ISO_V3(RGB60,         (BR8_POS_1_3_4_5_8(RGB60,         KC_LGUI, KC_RGUI, QK_LEAD))),
+#ifdef TETRIS_GAME_ENABLE
+    [_TETRIS]      = KEYMAP_TKL_ISO_V3(TETRIS60,      (BR8_POS_1_3_4_5_8(TETRIS60,      KC_NO, KC_NO, KC_NO))),
+#endif
 };
 
 // clang-format on
@@ -52,12 +69,15 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
   [_FN]          = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_SYS]         = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
   [_RGB]         = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
+#ifdef TETRIS_GAME_ENABLE
+  [_TETRIS]      = { ENCODER_CCW_CW(KC_NO, KC_NO)},
+#endif
 };
 #endif // ENCODER_MAP_ENABLE
 
 #include "tap_dance_bindings.inc"
 
-bool dip_switch_update_user(uint8_t index, bool active) {
+__attribute__((weak)) bool dip_switch_update_user(uint8_t index, bool active) {
   if (index == 0) {
     // Konvention: active == Mac-Stellung
     default_layer_set(1UL << (active ? _NEOQWERTZ1 : _QWERTZ));

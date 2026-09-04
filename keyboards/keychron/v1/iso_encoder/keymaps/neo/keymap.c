@@ -1,5 +1,21 @@
 // keyboards/keychron/v1/iso/keymaps/neo/keymap.c
 #define LAYOUT_ISO LAYOUT_iso_83
+
+// ---- Fallbacks für ältere QMKs (Keychron-Fork) - siehe v1_max/keymap.c ----
+#ifndef QK_RGB_MATRIX_TOGGLE
+#define QK_RGB_MATRIX_TOGGLE RGB_TOG
+#define QK_RGB_MATRIX_MODE_NEXT RGB_MOD
+#define QK_RGB_MATRIX_MODE_PREVIOUS RGB_RMOD
+#define QK_RGB_MATRIX_VALUE_UP RGB_VAI
+#define QK_RGB_MATRIX_VALUE_DOWN RGB_VAD
+#define QK_RGB_MATRIX_SPEED_UP RGB_SPI
+#define QK_RGB_MATRIX_SPEED_DOWN RGB_SPD
+#define QK_RGB_MATRIX_HUE_UP RGB_HUI
+#define QK_RGB_MATRIX_HUE_DOWN RGB_HUD
+#define QK_RGB_MATRIX_SATURATION_UP RGB_SAI
+#define QK_RGB_MATRIX_SATURATION_DOWN RGB_SAD
+#endif
+
 #include QMK_KEYBOARD_H
 
 // #define V1_MINIMAL_ENUM // z.Z. nicht noetig da eeprom geaendert wurde
@@ -18,8 +34,22 @@
 #include "formfactors/ff_75_iso_v1.h"
 #include "formfactors/row5_pick.h"
 
+#ifdef TETRIS_GAME_ENABLE
+#include "layouts/tetris60.h"
+#include "tetris.h"
+#endif
+
 // Combos (oder Stub, oder aus wenn COMBO_ENABLE=no)
 #include "combos_bindings.inc"
+
+#ifdef TETRIS_GAME_ENABLE
+#define TETRIS_ENTRY TG(_TETRIS)
+#else
+#define TETRIS_ENTRY KC_NO
+#endif
+
+#undef SYS60_ROW2
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), TETRIS_ENTRY, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO, KC_NO,
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_QWERTZ]      = KEYMAP_75_ISO_V1(     QWERTZ60,      (BR7_POS_1_3_4_5_7(QWERTZ60,      KC_LGUI, QK_LEAD))),
@@ -42,22 +72,28 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_SYS]         = KEYMAP_75_ISO_V1(     SYS60,         (BR7_POS_1_3_4_5_7(SYS60,         KC_LGUI, QK_LEAD))),
     [_RGB]         = KEYMAP_75_ISO_V1(     RGB60,         (BR7_POS_1_3_4_5_7(RGB60,         KC_LGUI, QK_LEAD))),
 
+#ifdef TETRIS_GAME_ENABLE
+    [_TETRIS]      = KEYMAP_75_ISO_V1(     TETRIS60,      (BR7_POS_1_3_4_5_7(TETRIS60,      KC_NO, KC_NO))),
+#endif
 };
 
 #ifdef ENCODER_MAP_ENABLE
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [_QWERTZ]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
     [_NEOQWERTZ1]  = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
-    [_NEOQWERTZ2]  = { ENCODER_CCW_CW(KC_MS_WH_DOWN, KC_MS_WH_UP) },
+    [_NEOQWERTZ2]  = { ENCODER_CCW_CW(MS_WHLD, MS_WHLU) },
     [_NEOQWERTZ3]  = { ENCODER_CCW_CW(RGB_SAD, RGB_SAI) },
     [_NEOQWERTZ4]  = { ENCODER_CCW_CW(RGB_HUD, RGB_HUI) },
     [_NOTED1]      = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
-    [_NOTED2]      = { ENCODER_CCW_CW(KC_MS_WH_DOWN, KC_MS_WH_UP) },
+    [_NOTED2]      = { ENCODER_CCW_CW(MS_WHLD, MS_WHLU) },
     [_NOTED3]      = { ENCODER_CCW_CW(RGB_SAD, RGB_SAI) },
     [_NOTED4]      = { ENCODER_CCW_CW(RGB_HUD, RGB_HUI) },
     [_FN]          = { ENCODER_CCW_CW(KC_BRID, KC_BRIU) },
     [_SYS]         = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
     [_RGB]         = { ENCODER_CCW_CW(RGB_VAD, RGB_VAI) },
+#ifdef TETRIS_GAME_ENABLE
+    [_TETRIS]      = { ENCODER_CCW_CW(KC_NO, KC_NO) },
+#endif
 };
 #endif
 
@@ -65,7 +101,7 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 
 #include "tap_dance_bindings.inc"
 
-bool dip_switch_update_user(uint8_t index, bool active) {
+__attribute__((weak)) bool dip_switch_update_user(uint8_t index, bool active) {
   if (index == 0) {
     // Konvention: active == Mac-Stellung
     default_layer_set(1UL << (active ? _NEOQWERTZ1 : _QWERTZ));
