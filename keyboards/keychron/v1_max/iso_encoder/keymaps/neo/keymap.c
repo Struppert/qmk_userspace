@@ -50,13 +50,24 @@
 #include "layouts/rgb60.h"
 #include "layouts/sys60.h"
 
+#ifdef TETRIS_GAME_ENABLE
+#include "layouts/tetris60.h"
+#include "tetris.h"
+#endif
+
 // BT-Host-Wahl (BT_HST1-3/P2P4G) und Akkustand (BAT_LVL) direkt auf _SYS
 // statt nur über die verschachtelte _WIN_FN-Ebene (die weiterhin zusätzlich
 // über MO(_WIN_FN) an der LWin-Position erreichbar bleibt, siehe unten) -
 // SYS60_ROW2 ist geteilt (layouts/sys60.h), daher lokaler Override statt
 // die Datei für andere Boards anzufassen.
+#ifdef TETRIS_GAME_ENABLE
+#define TETRIS_ENTRY TG(_TETRIS)
+#else
+#define TETRIS_ENTRY KC_NO
+#endif
+
 #undef SYS60_ROW2
-#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, KC_NO, KC_NO, KC_NO, KC_NO,
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, TETRIS_ENTRY, KC_NO, KC_NO, KC_NO,
 
 // 75%-Formfaktor (V1) + Bottom-Row-Picker
 #include "formfactors/ff_75_iso_v1.h"
@@ -87,6 +98,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_FN]          = KEYMAP_75_ISO_V1(     FN60,          (BR7_POS_1_3_4_5_7(FN60,          KC_LGUI, QK_LEAD))),
     [_SYS]         = KEYMAP_75_ISO_V1(     SYS60,         (BR7_POS_1_3_4_5_7(SYS60,         MO(_WIN_FN), QK_LEAD))),
     [_RGB]         = KEYMAP_75_ISO_V1(     RGB60,         (BR7_POS_1_3_4_5_7(RGB60,         MO(_WIN_FN), QK_LEAD))),
+#ifdef TETRIS_GAME_ENABLE
+    [_TETRIS]      = KEYMAP_75_ISO_V1(     TETRIS60,      (BR7_POS_1_3_4_5_7(TETRIS60,      KC_NO, KC_NO))),
+#endif
 };
 
 #ifdef ENCODER_MAP_ENABLE
@@ -104,6 +118,9 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [_SYS]         = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU) },
     [_RGB]         = { ENCODER_CCW_CW(RGB_VAD, RGB_VAI) },
     [_WIN_FN]      = { ENCODER_CCW_CW(KC_BRID, KC_BRIU) },
+#ifdef TETRIS_GAME_ENABLE
+    [_TETRIS]      = { ENCODER_CCW_CW(KC_NO, KC_NO) },
+#endif
 };
 #endif
 

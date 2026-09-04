@@ -64,6 +64,9 @@ enum layers {
 #ifdef _BLUETOOTH_LAYER
   _WIN_FN,
 #endif
+#ifdef TETRIS_GAME_ENABLE
+  _TETRIS,
+#endif
 };
 #endif
 
@@ -77,6 +80,13 @@ enum custom_keycodes {
   KC_OS_LNX,
   KC_OS_MAC,
   KC_OS_CYCLE,
+#ifdef TETRIS_GAME_ENABLE
+  TET_LEFT,
+  TET_RIGHT,
+  TET_DOWN,
+  TET_ROT,
+  TET_DROP,
+#endif
 };
 
 // ── Aliases used across keymaps (public) ───────────────────────────────────

@@ -10,6 +10,10 @@
 #include "process_leader.h"
 #endif
 
+#ifdef TETRIS_GAME_ENABLE
+#include "tetris.h"
+#endif
+
 /* ───────────────────────────────────────────────────────────────────────────
  * QMK Tap/Hold-Tuning
  * ───────────────────────────────────────────────────────────────────────────
@@ -100,6 +104,31 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       uc_set_and_feedback(UNICODE_MODE_LINUX);
     return false;
   }
+
+#ifdef TETRIS_GAME_ENABLE
+  case TET_LEFT:
+    tetris_input_left();
+    return false;
+  case TET_RIGHT:
+    tetris_input_right();
+    return false;
+  case TET_DOWN:
+    tetris_input_soft_drop();
+    return false;
+  case TET_ROT:
+    tetris_input_rotate();
+    return false;
+  case TET_DROP:
+    tetris_input_hard_drop();
+    return false;
+  case KC_ESC:
+    if (IS_LAYER_ON(_TETRIS)) {
+      tetris_stop();
+      layer_off(_TETRIS);
+      return false;
+    }
+    return true;
+#endif
   }
   return true;
 }
@@ -134,5 +163,21 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     break; // aus
   }
 #endif
+
+#ifdef TETRIS_GAME_ENABLE
+  bool tetris_on = layer_state_cmp(state, _TETRIS);
+  if (tetris_on && !tetris_is_active()) {
+    tetris_start();
+  } else if (!tetris_on && tetris_is_active()) {
+    tetris_stop();
+  }
+#endif
+
   return state;
 }
+
+#ifdef TETRIS_GAME_ENABLE
+void housekeeping_task_user(void) {
+  tetris_task();
+}
+#endif
