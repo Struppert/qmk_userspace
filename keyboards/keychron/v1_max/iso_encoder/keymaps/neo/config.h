@@ -1,6 +1,17 @@
 #pragma once
 // V1 encoder: identische Limits
 
+// BT-Host-LEDs an SYS60_ROW2-Override in keymap.c anpassen: BT_HST1-3/
+// P2P4G liegen dort auf U/I/O/P statt Keychrons Default Q/W/E/R (siehe
+// BLUETOOTH.md) - ohne diesen Override würde die Pairing-/Verbindungs-
+// Blink-LED weiterhin auf Q/W/E aufleuchten statt auf der tatsächlich
+// gedrückten Taste.
+#undef BT_INDCATION_LED_MATRIX_LIST
+#define BT_INDCATION_LED_MATRIX_LIST \
+  { 21, 22, 23 }
+#undef P24G_INDICATION_LED_INDEX
+#define P24G_INDICATION_LED_INDEX 24
+
 // --- Wear Leveling EFL sauber konfigurieren ---
 #undef EEPROM_DRIVER
 #define EEPROM_DRIVER wear_leveling

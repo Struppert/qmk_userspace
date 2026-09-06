@@ -19,24 +19,27 @@
 #define QK_RGB_MATRIX_SATURATION_DOWN RGB_SAD
 #endif
 
-// ---- Stubs für Keychron-/OS-Extras, die der Fork evtl. nicht kennt ----
-#ifndef KC_TASK
-#define KC_TASK KC_NO
-#endif
-#ifndef KC_FILE
-#define KC_FILE KC_NO
-#endif
-#ifndef BT_HST1
-#define BT_HST1 KC_NO
-#define BT_HST2 KC_NO
-#define BT_HST3 KC_NO
-#define P2P4G KC_NO
-#endif
-#ifndef BAT_LVL
-#define BAT_LVL KC_NO
-#endif
-
 #include QMK_KEYBOARD_H
+// QMK_KEYBOARD_H (generiert, nur quantum.h + LAYOUT_iso_83) bringt
+// BT_HST1/KC_TASK/etc. NICHT mit - Keychrons eigenes Referenz-Keymap
+// (v1_max/iso_encoder/keymaps/keychron/keymap.c) inkludiert deshalb
+// zusätzlich explizit keychron_common.h.
+#include "keychron_common.h"
+
+// KEIN "#ifndef BT_HST1"-Fallback hier (gab es früher, jetzt entfernt):
+// #ifndef kann eine C-Enum-Konstante grundsätzlich NIE sehen (der
+// Preprocessor kennt nur #define-Makros) - der Fallback-Block hat daher
+// IMMER gefeuert, komplett unabhängig davon ob keychron_common.h oben
+// eingebunden war oder nicht, und BT_HST1/BT_HST2/BT_HST3/P2P4G/BAT_LVL/
+// KC_TASK/KC_FILE dauerhaft zu Makros = KC_NO gemacht - noch bevor die
+// keymaps[]-Arrays weiter unten gebaut wurden. Per _Static_assert und
+// Preprocessor-Dump (-E) zweifelsfrei nachgewiesen. Das war der
+// eigentliche, alleinige Grund, warum die Bluetooth-Tasten nirgends im
+// kompilierten Keymap auftauchten (weder alt auf R/T/Z noch neu auf
+// U/I/O/P, weder auf _SYS noch auf _WIN_FN) - seit die SYS60_ROW2-
+// BT-Bindung 2026-08-31 eingeführt wurde. Dieser Fork (~/keychron-qmk,
+// LK_WIRELESS_ENABLE aktiv) definiert alle diese Keycodes über
+// keychron_common.h immer real, ein Fallback ist hier nie nötig.
 
 // #define V1_MINIMAL_ENUM // z.Z. nicht noetig da eeprom geaendert wurde
 #include "keymap_iso_common.h"
@@ -67,7 +70,7 @@
 #endif
 
 #undef SYS60_ROW2
-#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, TETRIS_ENTRY, KC_NO, KC_NO, KC_NO,
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), KC_NO, KC_NO, KC_NO, BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, TETRIS_ENTRY,
 
 // 75%-Formfaktor (V1) + Bottom-Row-Picker
 #include "formfactors/ff_75_iso_v1.h"
@@ -127,6 +130,43 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 // clang-format on
 
 #include "tap_dance_bindings.inc"
+
+// _SYS-Layer-Indikator: rot solide, bei aktivem Bluetooth-Transport blau statt
+// rot, dabei blinkt zusätzlich die Taste des gerade gewählten BT-Host-Slots
+// (BT_HST1-3), damit man ohne Blick auf den Host-PC sieht, welches Gerät
+// gerade angepeilt wird. Ersetzt für die Dauer der _SYS-Ebene den normal
+// aktiven RGB-Matrix-Effekt komplett (return false).
+#if defined(RGB_MATRIX_ENABLE) && defined(LK_WIRELESS_ENABLE)
+#include "transport.h"
+#include "wireless.h"
+
+bool rgb_matrix_indicators_user(void) {
+    if (!layer_state_is(_SYS)) {
+        return true;
+    }
+
+    if (get_transport() == TRANSPORT_BLUETOOTH) {
+        rgb_matrix_set_color_all(0, 0, 255);
+
+#ifdef BT_INDCATION_LED_MATRIX_LIST
+        uint8_t host = wireless_get_host_index();
+        if (host >= 1 && host <= 3) {
+            static const uint8_t bt_host_leds[] = BT_INDCATION_LED_MATRIX_LIST;
+            if ((timer_read() / 300) % 2) {
+                rgb_matrix_set_color(bt_host_leds[host - 1], 255, 255, 255);
+            } else {
+                rgb_matrix_set_color(bt_host_leds[host - 1], 0, 0, 0);
+            }
+        }
+#endif
+    } else {
+        rgb_matrix_set_color_all(255, 0, 0);
+    }
+
+    return false;
+}
+#endif
+
 __attribute__((weak)) bool dip_switch_update_user(uint8_t index, bool active) {
   if (index == 0) {
     // Konvention: active == Mac-Stellung

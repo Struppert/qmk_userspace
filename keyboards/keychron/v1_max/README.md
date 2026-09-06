@@ -64,6 +64,26 @@ make keychron/v1_max/iso_encoder:neo:dfu-util QMK_USERSPACE=/home/dieter/qmk_use
 | `STATIC_ASSERT("Number of encoder_map layers doesn't match...")` | War nur ein Folgefehler des `KC_MS_WH_*`-Fehlers oben (Compile-Fehler in `encoder_map[]` verwirrt die Introspection), kein eigener Bug | Verschwand nach obigem Fix von selbst |
 | `qmk compile` meldet "Invalid keymap argument" | Fork-eigene `qmk`-CLI-Tooling kennt das externe Userspace-Overlay nicht zuverlässig | `make ... QMK_USERSPACE=...` statt `qmk compile` verwenden (siehe Build-Abschnitt) |
 
+## 🩹 Behobener Bug im eigenen Keymap: BT-Tasten wirkungslos (2026-08-31 bis 2026-09-06)
+
+`BT_HST1`/`BT_HST2`/`BT_HST3`/`P2P4G`/`BAT_LVL` haben von der Einführung
+der `_SYS`-Bluetooth-Bindung (2026-08-31) bis zum Fix (2026-09-06) **gar
+nichts** getan - unabhängig von Tastenposition oder Schalterstellung,
+in VIA/Launcher nicht sichtbar (sahen aus wie leere `KC_NO`-Tasten).
+
+**Ursache:** ein "Fallback für ältere QMKs"-Block in `keymap.c`
+(`#ifndef BT_HST1 #define BT_HST1 KC_NO ... #endif`) hat unabhängig vom
+tatsächlichen Fork **immer** gefeuert - `#ifndef` kann in C grundsätzlich
+nur `#define`-Makros erkennen, `BT_HST1` ist aber eine echte Enum-
+Konstante aus `keychron_common.h`. Zusätzlich fehlte das
+`#include "keychron_common.h"`, das Keychrons eigenes Referenz-Keymap
+immer setzt (`QMK_KEYBOARD_H` allein bringt es nicht mit).
+
+**Fix:** Fallback-Block entfernt, fehlendes Include ergänzt. Volle
+Diagnose, Verifikationsmethode (Compiler-`_Static_assert`, `-E`-Dump,
+Raw-HID-Livecheck) und Details: siehe `BLUETOOTH.md`, Abschnitt
+"Behobener Bug".
+
 ## 💡 VIA
 - `via.json` liegt hier im Verzeichnis - **1:1 Kopie von Keychrons
   eigener offizieller Definition** (`~/keychron-qmk/qmk_firmware/

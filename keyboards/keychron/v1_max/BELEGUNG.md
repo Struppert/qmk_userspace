@@ -18,7 +18,7 @@ aus `keymap_logic.c`.
 | 1 | `_NEOQWERTZ1` | Default | nur über `_SYS`→`DF(_NEOQWERTZ1)` |
 | 2 | `_NEOQWERTZ2` | Momentary | Neo-Shift-Ebene, über `NEO_SHIFT` |
 | 3 | `_NEOQWERTZ3` | Momentary | Capslock-Tap-Dance halten (Ebene 1-3), oder L3-Taste |
-| 4 | `_NEOQWERTZ4` | Momentary | `L4_MO_NEO` (rechtes AltGr auf Ebene 1-3) |
+| 4 | `_NEOQWERTZ4` | Momentary | `L4_MO_NEO` - Taste neben LShift (Reihe 4) auf Ebene 1-3, zusätzlich rechtes AltGr nur auf Ebene 1-2 (auf Ebene 3 ist AltGr normales `KC_RALT`) |
 | 5 | `_NOTED1` | Default | nur über `_SYS`→`DF(_NOTED1)` |
 | 6 | `_NOTED2` | Momentary | Noted-Shift-Ebene, über `NOTED_SHIFT` |
 | 7 | `_NOTED3` | Momentary | Capslock-Tap-Dance halten (Ebene 5-7), oder L3-Taste |
@@ -30,7 +30,7 @@ aus `keymap_logic.c`.
 | 13 | `_TETRIS` | Toggle | `TG(_TETRIS)` auf `_SYS` - **nur wenn beim Build `TETRIS_GAME_ENABLE=yes` gesetzt ist** (Default: aus) |
 
 Ebene 13 existiert nur in Sonder-Builds - Details siehe eigener Abschnitt
-unten und `TETRIS.md`.
+unten (Build-Befehl, PC-Setup, Spielstand alles dort enthalten).
 
 **Kein physischer DIP-Schalter** (`DIP_SWITCH_ENABLE` ist nirgends
 gesetzt) - `dip_switch_update_user()` in `keymap.c` ist totes,
@@ -94,6 +94,13 @@ LAlt, `[Leertaste]`, RAlt, **`QK_LEAD`**, RCtrl - es gibt auf diesem
 (kein Bestätigungs-Tastendruck nötig - sonst werden weitere Tasten in die
 Sequenz eingesammelt statt normal getippt).
 
+**Zusätzlicher Schnellzugriff: Combo `F+J` → Leader** - beide Tasten
+gleichzeitig drücken (`COMBO_TERM = 40 ms`), aber **nur auf `_QWERTZ`
+und `_NEOQWERTZ1`** (`combo_should_trigger()` in `combos_bindings.inc`
+schränkt das explizit auf diese beiden Default-Layer ein, `COMBO_ENABLE`
+ist für dieses Board aktiv). Auf allen anderen Ebenen tut die Kombination
+nichts Besonderes (F und J werden normal getippt).
+
 **Voller Leader-Baum** (`users/neo/leader/table.c`, nicht die reduzierte
 kbd8x_mk3-Variante):
 
@@ -130,9 +137,9 @@ Eintrag) oder `LEAD H H` am Gerät selbst tippen für die Live-Übersicht.
 `_NOTED1-4`) nutzen Farbton - siehe `encoder_map[]` in `keymap.c` für die
 genaue Zuordnung.
 
-## 🔒 Fixe Bereiche (auf allen 13 Layern identisch, inkl. `_TETRIS` falls aktiv)
+## 🔒 Fixe Bereiche (auf allen Layern identisch **außer `_WIN_FN`**, inkl. `_TETRIS` falls aktiv)
 
-**F-Reihe (physische Reihe 0, 16 Tasten):**
+**F-Reihe (physische Reihe 0, 15 Tasten):**
 `KC_ESC · F1 · F2 · F3 · F4 · F5 · F6 · F7 · F8 · F9 · F10 · F11 · F12 · KC_DEL · KC_MUTE`
 
 **Center-Spalte (rechts, alle Layer):**
@@ -141,6 +148,17 @@ genaue Zuordnung.
 - Reihe 3: `Home`
 - Reihe 4: `Up`
 - Reihe 5: `Left · Down · Right`
+
+**Ausnahme `_WIN_FN` (Ebene 12):** Diese Ebene wird nicht über
+`KEYMAP_75_ISO_V1(...)` gebaut, sondern direkt als rohes
+`LAYOUT_iso_83(...)` in `keymap.c` - dadurch gilt die Fixierung dort nur
+teilweise:
+- **F-Reihe komplett anders belegt** (Display-/RGB-Helligkeit, `KC_TASK`,
+  `KC_FILE`, Media-Keys, `RGB_TOG` statt Esc/F1-F12/Mute) - siehe eigene
+  Tabelle in Ebene 12 unten.
+- **Center-Spalte Reihe 3 überschrieben**: `KC_END` statt `Home`.
+- Center-Spalte Reihe 1/2/4/5 bleibt unverändert (`_______`, fällt auf
+  `_SYS`/`_RGB` darunter durch).
 
 **Kein ISO-Enter-Split wie bei kbd8x_mk3** - Enter sitzt hier ganz normal
 als letzte Taste jeder Reihe-3-Definition (`*_ROW3`), keine
@@ -246,10 +264,10 @@ RGB_MATRIX).
 ### Ebene 10 — `_SYS`
 | Reihe 1 | `Esc` `QK_BOOT` `EE_CLR` `(frei)` ×9 `UG_TOGG`* `Bksp` |
 |:--|:--|
-| **Reihe 2** | `Tab` `DF(_QWERTZ)` `DF(_NEOQWERTZ1)` `DF(_NOTED1)` `BT_HST1` `BT_HST2` `BT_HST3` `P2P4G` `BAT_LVL` `(frei)` ×4 |
+| **Reihe 2** | `Tab` `DF(_QWERTZ)` `DF(_NEOQWERTZ1)` `DF(_NOTED1)` `(frei)` ×3 `BT_HST1` `BT_HST2` `BT_HST3` `P2P4G` `BAT_LVL` `TETRIS_ENTRY` |
 | **Reihe 3** | `KC_CAPS` `UC_MODE_CYCLE` `UC_SET_LNX` `UC_SET_WIN` `UC_SET_WINC` `(frei)` ×8 `Enter` |
 | **Reihe 4** | `LShift` `KC_OS_CYCLE` `KC_OS_WIN` `KC_OS_LNX` `KC_OS_MAC` `(frei)` ×7 `RShift` |
-| **Reihe 5** | `LCtrl` `MO(_WIN_FN)` `LAlt` `[Leertaste]` `RAlt` `QK_LEAD` `RCtrl` |
+| **Reihe 5** | `LCtrl` `MO(_WIN_FN)` `LAlt` `[Leertaste]` `(frei)` `QK_LEAD` `RCtrl` |
 
 \* `UG_TOGG` in Reihe 1 ist die kbd8x_mk3-Konvention (RGBLIGHT-Toggle) -
 **auf diesem Board nicht vorhanden**, da hier `RGBLIGHT_ENABLE=no` ist
@@ -257,12 +275,32 @@ RGB_MATRIX).
 `(frei)`.
 
 **BT-Host-Wahl/Akkustand jetzt direkt auf `_SYS`** (Reihe 2, Position
-5-9) - lokaler Override von `SYS60_ROW2` in `keymap.c`, seit 2026-08-31.
+8-12 = physisch `U`/`I`/`O`/`P`/`Ü`) - lokaler Override von `SYS60_ROW2`
+in `keymap.c`, seit 2026-08-31, ab 2026-09-06 bewusst auf die rechte Hand
+verschoben (`R`/`T`/`Z` dazwischen jetzt frei): Q/W/E bleiben
+Layer-Auswahl, die Bluetooth-Tasten liegen nicht mehr direkt daneben,
+sondern deutlich abgesetzt unter U/I/O/P - Details siehe `BLUETOOTH.md`.
 Vorher nur über die verschachtelte `_WIN_FN`-Ebene erreichbar (siehe
-unten) - die bleibt zusätzlich bestehen.
+unten) - die bleibt zusätzlich bestehen, unverändert auf der Zahlenreihe.
 
 Alle Tasten dieser Ebene funktionieren hier (anders als kbd8x_mk3) -
 `process_record_user()`/`keymap_logic.c` sind für dieses Board kompiliert.
+
+**RGB-Layer-Indikator:** Solange `_SYS` gehalten wird, färbt
+`rgb_matrix_indicators_user()` (in `keymap.c`) die komplette Matrix
+**rot** ein - außer der aktive Transport ist gerade Bluetooth
+(`get_transport() == TRANSPORT_BLUETOOTH`), dann **blau**, und zusätzlich
+blinkt die Taste des aktuell verbundenen BT-Host-Slots (`BT_HST1/2/3`,
+LED-Indizes aus `BT_INDCATION_LED_MATRIX_LIST`) im 300-ms-Takt weiß/aus.
+Das ersetzt für die Haltedauer den sonst aktiven RGB-Matrix-Effekt
+komplett.
+
+`BT_INDCATION_LED_MATRIX_LIST`/`P24G_INDICATION_LED_INDEX` sind in
+`keymaps/neo/config.h` lokal auf `{21, 22, 23}`/`24` (U/I/O/P)
+überschrieben, damit sie zur `SYS60_ROW2`-Verschiebung passen - sowohl
+dieses Blinken als auch Keychrons eigene Pairing-/Verbindungs-Blink-LED
+(siehe `BLUETOOTH.md`) sitzen dadurch korrekt auf der tatsächlich
+gedrückten Taste, nicht mehr auf Q/W/E.
 
 ### Ebene 11 — `_RGB`
 Nutzt `layouts/rgb60.h` unverändert - `QK_RGB_MATRIX_*`-Keycodes
@@ -299,8 +337,10 @@ Zwei-Tasten-Kombination aus Gewohnheit weiterverwendet wird.
 ### Ebene 13 — `_TETRIS` (nur `TETRIS_GAME_ENABLE=yes`)
 
 Eigenständiger Minispiel-Layer, rendert per HID-Keystrokes in ein
-PC-Terminal - siehe `TETRIS.md` für Build-Flag, PC-seitiges Setup
-(`stty raw -echo && cat` bzw. PowerShell-Äquivalent) und Spielstand.
+PC-Terminal. Build (Default: aus):
+```
+make keychron/v1_max/iso_encoder:neo QMK_USERSPACE=~/qmk_userspace TETRIS_GAME_ENABLE=yes
+```
 F-Reihe und Center-Spalte sind wie bei allen anderen Ebenen fix (siehe
 oben), Reihe 1/2/4 komplett `KC_NO`:
 
@@ -313,8 +353,64 @@ Vim-Bindung: `H`=links, `J`=runter (soft drop), `K`=rotieren, `L`=rechts,
 Leertaste=hard drop, `Esc`=Layer verlassen (`KC_ESC` wird in
 `process_record_user` abgefangen, solange `_TETRIS` aktiv ist).
 
+**PC-seitiges Setup** - keine Software nötig, nur ein Terminal, das
+getippte Bytes roh durchreicht statt sie als Kommando zu interpretieren
+(hängt an der Shell dahinter, nicht am Terminal-Emulator - Windows
+Terminal/WezTerm/Kitty sind alle vollwertige VT100/xterm-Emulatoren):
+
+*WezTerm/Kitty, oder Windows Terminal mit WSL (POSIX-Shell):*
+```
+stty raw -echo && cat
+```
+Schaltet lokales Echo/Zeilenverarbeitung der Shell aus. `Strg+C` beendet
+`cat` im raw mode nicht mehr - stattdessen `stty sane` in einem zweiten
+Terminal, oder das Fenster schließen.
+
+*Windows Terminal mit nativem PowerShell (kein WSL):*
+```powershell
+while (($c = [Console]::Read()) -ge 0) { [Console]::Out.Write([char]$c) }
+```
+Liest Zeichen direkt über die Console-API statt über PSReadLine - ohne
+Zeilen-Editing/Kommando-Interpretation. `Strg+C` bricht normal ab.
+
+Beide Varianten laufen über dieselbe deutsche `send_string()`-LUT
+(`sendstring_de.c`) wie der Rest des Keymaps - erwartet also ein
+deutsches Tastaturlayout auf dem Host.
+
+**Caveat EEPROM:** `DYNAMIC_KEYMAP_LAYER_COUNT` wechselt zwischen 13 und
+14 je nach `TETRIS_GAME_ENABLE` - VIAs EEPROM-Keymap-Layout hängt daran.
+Nach dem Umschalten des Flags einmal EEPROM zurücksetzen (Bootmagic-Kombo
+oder `EEPROM_RESET`-Keycode), sonst kann VIA verschobene Daten anzeigen.
+
+**Spielstand:** Skelett mit einem festen Teil (T-Tetromino), Bewegung/
+Rotation/Zeilen-Clear funktionieren. Kein Score, kein Next-Piece, keine
+Zufalls-Teile-Bag - bewusst minimal, nur um zu testen, ob das
+Grundprinzip (Terminal-Rendering per HID-Keystrokes) performant genug
+ist.
+
+(`TETRIS.md` bleibt als Portierungs-Referenz für V1/V3/kbd8x_mk3
+bestehen, wird für die reine V1-Max-Nutzung hier aber nicht mehr
+gebraucht.)
+
 ## 📎 Legende: deutsche Sonderzeichen / Unicode
 
-Identisch zu kbd8x_mk3 - siehe dortige `BELEGUNG.md`, Abschnitt "Legende:
-deutsche Sonderzeichen / Unicode" (gleiche geteilte `keymap_extras/
-keymap_german.h`-Basis, keine Board-Unterschiede).
+(Gleiche geteilte `keymap_extras/keymap_german.h`-Basis wie kbd8x_mk3,
+keine Board-Unterschiede.)
+
+| Code | Zeichen | Code | Zeichen | Code | Zeichen |
+|:--|:--|:--|:--|:--|:--|
+| `DE_SS` | ß | `DE_ACUT` | ´ (tot) | `DE_GRV` | \` (tot) |
+| `DE_UDIA` | Ü | `DE_ODIA` | Ö | `DE_ADIA` | Ä |
+| `DE_HASH` | # | `DE_PLUS` | + | `DE_MINS` | - |
+| `DE_LABK`/`DE_RABK` | < / > | `DE_COMM`/`DE_DOT` | , / . | `DE_CIRC` | ^ (tot) |
+| `DE_DEG` | ° | `DE_SECT` | § | `DE_EXLM` | ! |
+| `DE_DQUO`/`DE_QUOT` | " / ' | `DE_DLR` | $ | `DE_PERC` | % |
+| `DE_AMPR` | & | `DE_SLSH` | / | `DE_LPRN`/`DE_RPRN` | ( / ) |
+| `DE_EQL` | = | `DE_QUES` | ? | `DE_ASTR` | * |
+| `DE_SCLN`/`DE_COLN` | ; / : | `DE_UNDS` | _ | `DE_LBRC`/`DE_RBRC` | [ / ] |
+| `DE_LCBR`/`DE_RCBR` | { / } | `DE_BSLS` | \ | `DE_AT` | @ |
+| `DE_EURO` | € | `DE_TILD` | ~ | `DE_PIPE` | \| |
+| `UC(0x2113)` | ℓ | `UC(0x00BB)`/`UC(0x00AB)` | » / « | `UC(0x2039)`/`UC(0x203A)` | ‹ / › |
+| `UC(0x201E)`/`UC(0x201C)`/`UC(0x201D)` | „ / " / " | `UC(0x201A)`/`UC(0x2018)`/`UC(0x2019)` | ‚ / ' / ' | `UC(0x1E9E)` | ẞ |
+| `UC(0x21BB)` | ↻ | `UC(0x00B9)`/`UC(0x00B2)`/`UC(0x00B3)` | ¹ / ² / ³ | `UC(0x00A2)`/`UC(0x00A5)` | ¢ / ¥ |
+| `UC(0x00B7)` | · | | | | |
