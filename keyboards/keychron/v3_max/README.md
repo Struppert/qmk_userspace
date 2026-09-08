@@ -66,10 +66,28 @@ LEDs) und dass hier **keine** redundante `_WIN_FN`-Ebene existiert (siehe
 dort, bewusste Vereinfachung: nur der Capslock+U/I/O/P/Ü-Weg).
 
 ## 💡 VIA
-- `via.json` liegt hier im Verzeichnis - 1:1 Kopie von Keychrons eigener
-  offizieller Definition (`~/keychron-qmk/qmk_firmware/keyboards/keychron/
-  v3_max/via_json/v3_max_iso_encoder.json`), Matrix-Maße (6×17) und
-  Protokollversion unverändert.
+- **Automatische Erkennung schlägt fehl:** Da dieses Board die echte
+  Keychron-Hersteller-USB-ID (`3434:0934`) meldet, versucht VIA beim
+  Verbinden automatisch, seine eigene Online-Katalog-Definition zu laden
+  ("Fetching v3 definition failed" - "v3" ist hier VIAs
+  Definitions-Schema-Version, nicht der Board-Name). Dieser Fetch scheint
+  in dieser Umgebung generell zu scheitern (auch beim manuellen Laden
+  über den Design-Tab mit deaktiviertem V2-Schalter) - die ID wurde
+  **bewusst nicht geändert**, um die Geräteidentität dieses echten Boards
+  nicht zu verfälschen.
+- **Workaround: `via.json` im V2-Schema.** Ursprünglich war die Datei
+  hier eine 1:1-Kopie von Keychrons eigener V3-Schema-Definition
+  (`~/keychron-qmk/qmk_firmware/keyboards/keychron/v3_max/via_json/
+  v3_max_iso_encoder.json`, inkl. RGB-Matrix-Lighting-Menü) - die scheitert
+  am V2-Schema-Validator (fehlendes Pflichtfeld `lighting`, unerlaubte
+  Felder `keycodes`/`menus`). Auf reines V2-Schema reduziert (`lighting:
+  "none"`, RGB-Lighting-Menü entfernt) - das lädt rein lokal ohne
+  Netzwerk-Abhängigkeit. **Tradeoff:** kein RGB-Tab in VIA - RGB-Steuerung
+  läuft weiterhin über die `_RGB`-Ebene direkt am Board (siehe
+  `BELEGUNG.md`).
+- Import: VIA → Settings → "Show Design tab" aktivieren → Design-Tab →
+  **V2-Schalter aktivieren** → "Load Draft Definition" → diese Datei
+  auswählen. Matrix-Maße (6×17) unverändert.
 
 ## 🎛️ Makros
 - `DYNAMIC_KEYMAP_MACRO_COUNT = 12` wie bei V1 Max/kbd8x_mk3.
