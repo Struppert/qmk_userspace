@@ -71,6 +71,17 @@ dort, bewusste Vereinfachung: nur der Capslock+U/I/O/P/Ü-Weg).
   v3_max/via_json/v3_max_iso_encoder.json`), Matrix-Maße (6×17) und
   Protokollversion unverändert.
 
+## 🎛️ Makros
+- `DYNAMIC_KEYMAP_MACRO_COUNT = 12` wie bei V1 Max/kbd8x_mk3.
+- Makros werden über `tools/via_macros.py` synchron zu den anderen
+  Boards gehalten (gleiches Personen-Makro-Set). Erstsync 2026-09-08:
+  von der laufenden kbd8x_mk3 exportiert (`--path /dev/hidraw5`, 10/12
+  Slots belegt) und auf dieses Board importiert (`--path /dev/hidraw8` -
+  Raw-HID-Interface über `tools/via_macros.py list` finden, Pfad ändert
+  sich je nach USB-Reihenfolge), per Re-Export byte-identisch verifiziert.
+  Board hat mit 3102 statt 1591 Byte Makro-Puffer deutlich mehr Platz als
+  kbd8x_mk3 - alle 12 Slots passen ohne Kürzung.
+
 ## 🧾 Lizenz & Autor
 ```
 Maintainer: neo
