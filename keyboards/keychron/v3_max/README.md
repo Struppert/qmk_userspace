@@ -44,8 +44,20 @@ als `0483:df11 STM Device in DFU Mode` in `lsusb`), dann:
 ```bash
 make keychron/v3_max/iso_encoder:neo:dfu-util QMK_USERSPACE=/home/dieter/qmk_userspace
 ```
-(`qmk_home` muss dafür wie oben auf den Fork zeigen.) **Noch nicht am
-echten Board geflasht/verifiziert** - nur der Compile wurde getestet.
+(`qmk_home` muss dafür wie oben auf den Fork zeigen.)
+
+**Geflasht und live verifiziert (2026-09-08):** `dfu-util`-Flash lief
+sauber durch, Board bootet danach als `3434:0934 Keychron V3 Max` in
+`lsusb`. Per Raw-HID (`tools/via_macros.py`s `RawHid`-Klasse,
+`id_dynamic_keymap_get_keycode`) bestätigt, dass die `_SYS`-Ebene auf
+U/I/O/P/Ü tatsächlich `BT_HST1-3`/`P2P4G`/`BAT_LVL` liefert (`0x7e0b`-
+`0x7e0f`), nicht `KC_NO` - siehe `BLUETOOTH.md` für den vollen Ablauf,
+inkl. eines dabei gefundenen und korrigierten LED-Index-Fehlers (falsche
+Matrixzeile für die Pairing-Blink-LED, erste Version hätte auf der
+Zahlenreihe statt auf U/I/O/P geblinkt). **Noch nicht getestet:**
+tatsächliches Bluetooth-Pairing und ob die Indikator-LED optisch wirklich
+an der richtigen Taste blinkt - der Raw-HID-Check bestätigt nur die
+Keycode-Zuordnung im EEPROM, kein sichtbares LED-Verhalten.
 
 ## 🎛️ Bluetooth
 Gleicher Mechanismus wie beim V1 Max, siehe `BLUETOOTH.md` in diesem

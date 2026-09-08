@@ -80,3 +80,13 @@ verschoben, da `BAT_LVL` selbst weiterhin nur eine einzelne Taste ist
 ## 🔋 Akkustand
 Wie beim V1 Max: `BAT_LVL` zeigt den Akkustand als LED-Balken, wirkt nur
 ohne USB-Stromversorgung bei aktivem Bluetooth/2.4G-Transport.
+
+## ⚠️ Was noch nicht getestet ist
+Der Raw-HID-Check oben bestätigt nur, dass die richtigen Keycodes im
+EEPROM stehen (`BT_HST1-3`/`P2P4G`/`BAT_LVL` auf U/I/O/P/Ü) - **nicht**
+das tatsächliche Bluetooth-Verhalten. Noch nicht ausprobiert: Pairing
+mit einem echten Host, Verbindungswechsel zwischen Slots, ob die
+Indikator-LED optisch tatsächlich an U/I/O/P blinkt (LED-Indizes
+`{40,41,42}`/`43` sind nur rechnerisch aus `g_led_config` hergeleitet
+und gegen den Keycode-Test verifiziert, nicht visuell am Board), sowie
+`BAT_LVL`/`P2P4G` selbst.
