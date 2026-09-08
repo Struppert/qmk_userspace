@@ -9,11 +9,17 @@
 // Pairing-/Verbindungs-Blink-LED weiterhin auf Q/W/E aufleuchten statt
 // auf der tatsächlich gedrückten Taste. Setzt voraus, dass v3_max/config.h
 // im Fork diese beiden Defines mit #ifndef absichert (wie bei v1_max).
+// LED-Indizes 40/41/42/43 = U/I/O/P in Matrix-ZEILE 2 (nicht Zeile 1 -
+// das ist die Zahlenreihe!), per Raw-HID live gegen das geflashte Board
+// verifiziert (id_dynamic_keymap_get_keycode auf layer=_SYS, row=2,
+// col=7..11 lieferte 0x7e0b..0x7e0f = BT_HST1-3/P2P4G/BAT_LVL) - eine
+// erste Version dieser Datei hatte {23,24,25}/26 (Zeile 1 verwechselt),
+// vor dem Live-Test nie am echten Board geprüft.
 #undef BT_INDCATION_LED_MATRIX_LIST
 #define BT_INDCATION_LED_MATRIX_LIST \
-  { 23, 24, 25 }
+  { 40, 41, 42 }
 #undef P24G_INDICATION_LED_INDEX
-#define P24G_INDICATION_LED_INDEX 26
+#define P24G_INDICATION_LED_INDEX 43
 
 // --- Wear Leveling EFL sauber konfigurieren ---
 #undef EEPROM_DRIVER

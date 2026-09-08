@@ -286,10 +286,13 @@ Das ersetzt für die Haltedauer den sonst aktiven RGB-Matrix-Effekt
 komplett - Logik 1:1 vom V1 Max übernommen, unabhängig vom Formfaktor.
 
 `BT_INDCATION_LED_MATRIX_LIST`/`P24G_INDICATION_LED_INDEX` sind in
-`keymaps/neo/config.h` lokal auf `{23, 24, 25}`/`26` (U/I/O/P)
+`keymaps/neo/config.h` lokal auf `{40, 41, 42}`/`43` (U/I/O/P)
 überschrieben - andere Zahlen als beim V1 Max (`{21, 22, 23}`/`24`), weil
 dieses Board 88 statt 82 LEDs hat und die Key-Matrix-zu-LED-Zuordnung
-entsprechend anders liegt (siehe `BLUETOOTH.md` für die Herleitung).
+entsprechend anders liegt. Per Raw-HID am geflashten Board verifiziert
+(siehe `BLUETOOTH.md` für die genaue Herleitung/Messung, inkl. einer
+ersten falsch berechneten Version `{23,24,25}`/`26`, die vor dem Live-Test
+unentdeckt blieb).
 
 ### Ebene 11 — `_RGB`
 Nutzt `layouts/rgb60.h` unverändert - `QK_RGB_MATRIX_*`-Keycodes

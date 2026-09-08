@@ -47,14 +47,35 @@ diesem Slot.
 
 ## 💡 LED-Indizes (V3 Max-spezifisch, 88 statt 82 LEDs)
 `BT_INDCATION_LED_MATRIX_LIST`/`P24G_INDICATION_LED_INDEX` in
-`keymaps/neo/config.h` lokal auf `{23, 24, 25}`/`26` überschrieben
-(LED-Indizes für die physischen Positionen U/I/O/P, ermittelt aus dem
-"Key Matrix zu LED Index"-Array in `iso_encoder.c` des Forks). Setzt
-voraus, dass `v3_max/config.h` im Fork diese beiden Defines mit
-`#ifndef` absichert - wurde für dieses Board ergänzt (analog zum
-V1-Max-Fix vom 2026-09-06, Fork-Commit `53d2f53474`).
-`BAT_LEVEL_LED_LIST` bleibt unverändert auf dem Board-Default
-(`{17..26}`, Q bis P).
+`keymaps/neo/config.h` lokal auf `{40, 41, 42}`/`43` überschrieben
+(LED-Indizes für die physischen Positionen U/I/O/P). Setzt voraus, dass
+`v3_max/config.h` im Fork diese beiden Defines mit `#ifndef` absichert -
+wurde für dieses Board ergänzt (analog zum V1-Max-Fix vom 2026-09-06,
+Fork-Commit `53d2f53474`).
+
+**Live per Raw-HID verifiziert** (2026-09-08, `id_dynamic_keymap_get_keycode`,
+`tools/via_macros.py`s `RawHid`-Klasse gegen das frisch geflashte Board):
+`_SYS`-Layer, physische QWERTZ-Buchstabenreihe = Matrix-**Zeile 2**
+(nicht Zeile 1 - das ist die Zahlenreihe, per Test bestätigt:
+`layer=0,row=1,col=1` lieferte `0x1e` = "1", nicht `KC_Q`). Auf
+`row=2, col=7..11` liefert das Board `0x7e0b/0x7e0c/0x7e0d/0x7e0e/0x7e0f`
+= `BT_HST1/BT_HST2/BT_HST3/P2P4G/BAT_LVL` - dieselben Werte wie beim
+V1 Max auf U/I/O/P/Ü. Die LED-Indizes wurden entsprechend aus
+`g_led_config`s **Zeile 2** (nicht Zeile 1) übernommen: `{33..49}` für
+Zeile 2, Spalten 7-11 = `40/41/42/43/44`.
+
+**Korrigiert:** eine erste Version dieser Datei/`config.h` hatte
+`{23, 24, 25}`/`26` (aus `g_led_config`-Zeile 1 statt 2 berechnet, vor
+dem ersten echten Flash nie gegengeprüft) - das hätte die Pairing-
+Blink-LED auf der Zahlenreihe statt auf U/I/O/P aufleuchten lassen.
+Nach dem Live-Test auf die oben genannten korrekten Werte gefixt.
+`BAT_LEVEL_LED_LIST` bleibt unverändert auf dem Board-Default (`{17..26}`)
+- das sind LEDs aus Zeile 1, also physisch die **Zahlenreihe** (1-0), nicht
+die Buchstabenreihe (siehe Zeilen-Verwechslung oben - Zeile 1 ist auf
+diesem Board tatsächlich die Zahlenreihe). Rein kosmetisch für den
+LED-Balken ohne Belang, welche Reihe genau leuchtet - nicht eigens
+verschoben, da `BAT_LVL` selbst weiterhin nur eine einzelne Taste ist
+(auf Ü, Zeile 2) und nicht an diese Liste gekoppelt sein muss.
 
 ## 🔋 Akkustand
 Wie beim V1 Max: `BAT_LVL` zeigt den Akkustand als LED-Balken, wirkt nur
