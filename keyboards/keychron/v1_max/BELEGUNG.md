@@ -304,10 +304,17 @@ gedrückten Taste, nicht mehr auf Q/W/E.
 
 ### Ebene 11 — `_RGB`
 Nutzt `layouts/rgb60.h` unverändert - `QK_RGB_MATRIX_*`-Keycodes
-funktionieren hier tatsächlich (echtes RGB_MATRIX-Feature). Reihe 1:
-Toggle/Modus±/Helligkeit±/Speed±, Reihe 2: Farbton±/Sättigung±. Für die
-volle Einstellung eignet sich VIAs Lighting-Tab (`via.json`) besser als
-diese Tastenkombinationen.
+funktionieren hier tatsächlich (echtes RGB_MATRIX-Feature). Für die volle
+Einstellung eignet sich VIAs Lighting-Tab (`via.json`) besser als diese
+Tastenkombinationen. Reihe 3/4 sind bis auf Enter/Shift komplett `(frei)`
+(`KC_NO`) - kein zweites Belegungsschema wie bei den Buchstaben-Ebenen.
+
+| Reihe 1 | `Esc` `RGB_TOG` `RGB_MOD` `RGB_RMOD` `Helligkeit+` `Helligkeit-` `Speed+` `Speed-` `(frei)` ×5 `Bksp` |
+|:--|:--|
+| **Reihe 2** | `Tab` `Farbton+` `Farbton-` `Sättigung+` `Sättigung-` `(frei)` ×8 |
+| **Reihe 3** | `(frei)` ×13 `Enter` |
+| **Reihe 4** | `LShift` `(frei)` ×11 `RShift` |
+| **Reihe 5** | `LCtrl` `MO(_WIN_FN)` `LAlt` `[Leertaste]` `(frei)` `QK_LEAD` `RCtrl` |
 
 ### Ebene 12 — `_WIN_FN` (nur mit `_SYS`/`_RGB` gleichzeitig gehalten)
 
