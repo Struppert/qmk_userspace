@@ -25,7 +25,7 @@ aus `keymap_logic.c`.
 | 8 | `_NOTED4` | Momentary | `L4_MO_NOTED` |
 | 9 | `_FN` | Momentary | `SP_FN` (Leertaste halten) |
 | 10 | `_SYS` | Momentary | `SYS_ESC`/Capslock-Tap-Dance halten, oder `SYS_MO` (auf `_FN`) |
-| 11 | `_RGB` | Momentary | `RGB_MO` (auf `_FN`) - **funktioniert hier tatsächlich**, dieses Board hat echtes `RGB_MATRIX` (anders als kbd8x_mk3) |
+| 11 | `_RGB` | Momentary | `RGB_MO` (auf `_FN`) |
 | 12 | `_WIN_FN` | Momentary | `MO(_WIN_FN)` an der LWin-Position, nur während `_SYS`/`_RGB` gehalten wird - siehe eigener Abschnitt unten |
 | 13 | `_TETRIS` | Toggle | `TG(_TETRIS)` auf `_SYS` - **nur wenn beim Build `TETRIS_GAME_ENABLE=yes` gesetzt ist** (Default: aus) |
 
