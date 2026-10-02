@@ -70,7 +70,7 @@
 #endif
 
 #undef SYS60_ROW2
-#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), KC_NO, KC_NO, KC_NO, BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, TETRIS_ENTRY,
+#define SYS60_ROW2  KC_TAB, DF(_QWERTZ), DF(_NEOQWERTZ1), DF(_NOTED1), KC_NO, BAT_PRINT, KC_NO, BT_HST1, BT_HST2, BT_HST3, P2P4G, BAT_LVL, TETRIS_ENTRY,
 
 // 75%-Formfaktor (V1) + Bottom-Row-Picker
 #include "formfactors/ff_75_iso_v1.h"
@@ -136,12 +136,43 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 // (BT_HST1-3), damit man ohne Blick auf den Host-PC sieht, welches Gerät
 // gerade angepeilt wird. Ersetzt für die Dauer der _SYS-Ebene den normal
 // aktiven RGB-Matrix-Effekt komplett (return false).
+//
+// Zusätzlich (unabhängig von _SYS): die Taste des aktuell aktiven Wireless-
+// Ziels (BT_HST1-3 bzw. P2P4G) leuchtet IMMER konstant blau, auch während
+// eines normalen RGB-Matrix-Effekts (overlay_active_host_led() überschreibt
+// dort nur das eine LED, rgb_matrix_indicators_user() gibt sonst true
+// zurück - der Rest des Effekts läuft unverändert weiter) UND sogar wenn
+// RGB Matrix komplett per RGB_TOG ausgeschaltet ist: QMK ruft in diesem
+// Fall (effect == RGB_MATRIX_NONE, s. rgb_matrix.c rgb_matrix_none())
+// einmalig rgb_matrix_none_indicators_user() auf, bevor der Treiber in den
+// Sync-Zustand geht und keine weiteren Frames mehr schreibt - das einmal
+// gesetzte LED bleibt also an, ohne vom "alles aus"-Zustand überschrieben
+// zu werden.
 #if defined(RGB_MATRIX_ENABLE) && defined(LK_WIRELESS_ENABLE)
 #include "transport.h"
 #include "wireless.h"
 
+static void overlay_active_host_led(void) {
+    transport_t t = get_transport();
+    if (t == TRANSPORT_BLUETOOTH) {
+#ifdef BT_INDCATION_LED_MATRIX_LIST
+        uint8_t host = wireless_get_host_index();
+        if (host >= 1 && host <= 3) {
+            static const uint8_t bt_host_leds[] = BT_INDCATION_LED_MATRIX_LIST;
+            rgb_matrix_set_color(bt_host_leds[host - 1], 0, 0, 255);
+        }
+#endif
+    } else if (t == TRANSPORT_P2P4) {
+#ifdef P24G_INDICATION_LED_INDEX
+        rgb_matrix_set_color(P24G_INDICATION_LED_INDEX, 0, 0, 255);
+#endif
+    }
+    // TRANSPORT_USB: kein Wireless-Ziel aktiv, kein Overlay.
+}
+
 bool rgb_matrix_indicators_user(void) {
     if (!layer_state_is(_SYS)) {
+        overlay_active_host_led();
         return true;
     }
 
@@ -164,6 +195,12 @@ bool rgb_matrix_indicators_user(void) {
     }
 
     return false;
+}
+
+// Läuft auch wenn RGB Matrix komplett deaktiviert ist (RGB_TOG) oder der
+// Effekt explizit auf "None" steht - siehe Kommentar oben.
+void rgb_matrix_none_indicators_user(void) {
+    overlay_active_host_led();
 }
 #endif
 

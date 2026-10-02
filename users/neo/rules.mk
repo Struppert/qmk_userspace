@@ -21,6 +21,17 @@ EXTRAKEY_ENABLE = yes
 # every board, not just the ones that happen to compile leader/os_shell.c.
 SRC += sendstring_de.c
 
+# battery_print.c (BAT_PRINT auf _SYS: Akkustand per send_string() ins
+# fokussierte Terminal tippen) braucht battery_get_percentage()/_voltage()
+# aus Keychrons Wireless-Stack (keyboards/keychron/common/wireless) - nur
+# auf Boards verfügbar, die den einbinden (v1_max/v3_max, beide
+# iso_encoder). Der BAT_PRINT-Keycode selbst ist bereits per #ifdef
+# LK_WIRELESS_ENABLE in keymap_iso_common.h ausgeblendet; dieses Filter
+# hält die gleiche Grenze auch auf SRC-Ebene ein.
+ifneq ($(filter keychron/v1_max/% keychron/v3_max/%,$(KEYBOARD)),)
+  SRC += battery_print.c
+endif
+
 # Optimierungen
 ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   LTO_ENABLE      = yes

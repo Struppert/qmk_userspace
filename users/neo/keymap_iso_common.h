@@ -87,6 +87,9 @@ enum custom_keycodes {
   TET_ROT,
   TET_DROP,
 #endif
+#ifdef LK_WIRELESS_ENABLE
+  BAT_PRINT,
+#endif
 };
 
 // ── Aliases used across keymaps (public) ───────────────────────────────────

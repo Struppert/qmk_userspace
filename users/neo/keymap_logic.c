@@ -14,6 +14,10 @@
 #include "tetris.h"
 #endif
 
+#ifdef LK_WIRELESS_ENABLE
+#include "battery_print.h"
+#endif
+
 /* ───────────────────────────────────────────────────────────────────────────
  * QMK Tap/Hold-Tuning
  * ───────────────────────────────────────────────────────────────────────────
@@ -128,6 +132,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       return false;
     }
     return true;
+#endif
+
+#ifdef LK_WIRELESS_ENABLE
+  case BAT_PRINT:
+    battery_print();
+    return false;
 #endif
   }
   return true;
