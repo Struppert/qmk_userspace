@@ -18,6 +18,10 @@
 #include "battery_print.h"
 #endif
 
+#if defined(RGB_MATRIX_ENABLE) && defined(LK_WIRELESS_ENABLE)
+#include "host_led.h"
+#endif
+
 /* ───────────────────────────────────────────────────────────────────────────
  * QMK Tap/Hold-Tuning
  * ───────────────────────────────────────────────────────────────────────────
@@ -186,8 +190,13 @@ layer_state_t layer_state_set_user(layer_state_t state) {
   return state;
 }
 
-#ifdef TETRIS_GAME_ENABLE
+#if defined(TETRIS_GAME_ENABLE) || (defined(RGB_MATRIX_ENABLE) && defined(LK_WIRELESS_ENABLE))
 void housekeeping_task_user(void) {
+#ifdef TETRIS_GAME_ENABLE
   tetris_task();
+#endif
+#if defined(RGB_MATRIX_ENABLE) && defined(LK_WIRELESS_ENABLE)
+  host_led_task();
+#endif
 }
 #endif

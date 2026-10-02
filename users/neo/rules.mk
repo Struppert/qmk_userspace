@@ -32,6 +32,12 @@ ifneq ($(filter keychron/v1_max/% keychron/v3_max/%,$(KEYBOARD)),)
   SRC += battery_print.c
 endif
 
+# host_led.c (dauerhafte blaue Host-LED, siehe users/neo/host_led.h) -
+# gleiche Boards/Begründung wie battery_print.c oben.
+ifneq ($(filter keychron/v1_max/% keychron/v3_max/%,$(KEYBOARD)),)
+  SRC += host_led.c
+endif
+
 # Optimierungen
 ifeq ($(filter kbdfans/kbd8x_mk3 kbdfans/bella/%,$(KEYBOARD)),)
   LTO_ENABLE      = yes

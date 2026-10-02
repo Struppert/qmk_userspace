@@ -102,42 +102,31 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 //
 // Zusätzlich (unabhängig von _SYS): die Taste des aktuell aktiven Wireless-
 // Ziels (BT_HST1-3 bzw. P2P4G) leuchtet IMMER konstant blau, auch während
-// eines normalen RGB-Matrix-Effekts (overlay_active_host_led() überschreibt
-// dort nur das eine LED, rgb_matrix_indicators_user() gibt sonst true
-// zurück - der Rest des Effekts läuft unverändert weiter) UND sogar wenn
-// RGB Matrix komplett per RGB_TOG ausgeschaltet ist: QMK ruft in diesem
-// Fall (effect == RGB_MATRIX_NONE, s. rgb_matrix.c rgb_matrix_none())
-// einmalig rgb_matrix_none_indicators_user() auf, bevor der Treiber in den
-// Sync-Zustand geht und keine weiteren Frames mehr schreibt - das einmal
-// gesetzte LED bleibt also an, ohne vom "alles aus"-Zustand überschrieben
-// zu werden. 1:1 vom V1 Max übernommen; LED-Indizes kommen aus
-// BT_INDCATION_LED_MATRIX_LIST/P24G_INDICATION_LED_INDEX in config.h
-// (hier {40,41,42}/43, nicht {21,22,23}/24 wie beim V1 Max).
+// eines normalen RGB-Matrix-Effekts (host_led_apply() überschreibt dort
+// nur das eine LED, rgb_matrix_indicators_user() gibt sonst true zurück -
+// der Rest des Effekts läuft unverändert weiter). 1:1 vom V1 Max
+// übernommen; LED-Indizes kommen aus BT_INDCATION_LED_MATRIX_LIST/
+// P24G_INDICATION_LED_INDEX in config.h (hier {40,41,42}/43, nicht
+// {21,22,23}/24 wie beim V1 Max).
+//
+// Reicht ALLEIN nicht: Keychrons eigene Wireless-Firmware schaltet die
+// Hintergrundbeleuchtung ein paar Sekunden nach der Verbindungs-Animation
+// wieder ab, um einen manuell per RGB_TOG gewählten "aus"-Zustand zu
+// respektieren (keychron_task.c/indicator.c, eigene Timer/Transitions,
+// unabhängig von unseren Hooks hier) - das killt auch unser LED wieder.
+// Deshalb zusätzlich host_led_task() (users/neo/host_led.c) aus
+// housekeeping_task_user(): schreibt alle 500ms direkt in den LED-
+// Treiber-Puffer, bypasst rgb_matrix_task()s Enable-Gating komplett und
+// holt das LED so zuverlässig zurück, statt sich auf eine einzelne
+// Transition im Indicators-Hook zu verlassen.
 #if defined(RGB_MATRIX_ENABLE) && defined(LK_WIRELESS_ENABLE)
 #include "transport.h"
 #include "wireless.h"
-
-static void overlay_active_host_led(void) {
-    transport_t t = get_transport();
-    if (t == TRANSPORT_BLUETOOTH) {
-#ifdef BT_INDCATION_LED_MATRIX_LIST
-        uint8_t host = wireless_get_host_index();
-        if (host >= 1 && host <= 3) {
-            static const uint8_t bt_host_leds[] = BT_INDCATION_LED_MATRIX_LIST;
-            rgb_matrix_set_color(bt_host_leds[host - 1], 0, 0, 255);
-        }
-#endif
-    } else if (t == TRANSPORT_P2P4) {
-#ifdef P24G_INDICATION_LED_INDEX
-        rgb_matrix_set_color(P24G_INDICATION_LED_INDEX, 0, 0, 255);
-#endif
-    }
-    // TRANSPORT_USB: kein Wireless-Ziel aktiv, kein Overlay.
-}
+#include "host_led.h"
 
 bool rgb_matrix_indicators_user(void) {
     if (!layer_state_is(_SYS)) {
-        overlay_active_host_led();
+        host_led_apply();
         return true;
     }
 
@@ -163,9 +152,11 @@ bool rgb_matrix_indicators_user(void) {
 }
 
 // Läuft auch wenn RGB Matrix komplett deaktiviert ist (RGB_TOG) oder der
-// Effekt explizit auf "None" steht - siehe Kommentar oben.
+// Effekt explizit auf "None" steht - siehe Kommentar oben. Nur die erste
+// von mehreren Verteidigungslinien gegen Keychrons Backlight-Abschalt-
+// Timer - die zweite (host_led_task()) läuft aus housekeeping_task_user().
 void rgb_matrix_none_indicators_user(void) {
-    overlay_active_host_led();
+    host_led_apply();
 }
 #endif
 
